@@ -1,0 +1,23 @@
+/* jam with friends */
+/* jam.now.im */
+
+/* TEAM */
+Developer: Jiang Yio
+Site: http://inportb.com
+Twitter: @inportb
+
+/* THANKS */
+EpicCyndaquil: http://epiccyndaquil.com/
+Shuhao Wu: http://shuhaowu.com/
+Crispy_:
+Thomas Park: thomas@bootswatch.com
+Freepik: http://www.freepik.com/
+YouTube: http://www.youtube.com/
+SoundCloud: http://soundcloud.com/
+turntable.fm: http://turntable.fm/
+
+/* SITE */
+Standards: HTML5, CSS3
+Components: Bootstrap, flaticon, CoffeeScript, Underscore.js, jQuery, jquery.cookie, React, gevent, Bottle, gevent-socketio, youtube-dl
+Software: Sublime, Git, Chrome, Firefox
+
