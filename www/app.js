@@ -628,18 +628,20 @@ Playlist = React.createClass({
       return $.getJSON('http://gdata.youtube.com/feeds/api/videos?q=' + encodeURIComponent(query) + '&max-results=5&v=2&alt=json&callback=?').then((function(_this) {
         return function(data) {
           var result;
-          return _this.setState({
-            resultset: (function() {
-              var _i, _len, _ref, _results;
-              _ref = data.feed.entry;
-              _results = [];
-              for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                result = _ref[_i];
-                _results.push(normalize(result.link[0].href));
-              }
-              return _results;
-            })()
-          });
+          if (query === _this.state.query) {
+            return _this.setState({
+              resultset: (function() {
+                var _i, _len, _ref, _results;
+                _ref = data.feed.entry;
+                _results = [];
+                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                  result = _ref[_i];
+                  _results.push(normalize(result.link[0].href));
+                }
+                return _results;
+              })()
+            });
+          }
         };
       })(this));
     }

@@ -343,8 +343,9 @@ Playlist = React.createClass
 		else
 			$.getJSON 'http://gdata.youtube.com/feeds/api/videos?q=' + encodeURIComponent(query) + '&max-results=5&v=2&alt=json&callback=?'
 				.then (data) =>
-					@setState
-						resultset: (normalize result.link[0].href for result in data.feed.entry)
+					if query == @state.query
+						@setState
+							resultset: (normalize result.link[0].href for result in data.feed.entry)
 	, 500
 	addRick: ->
 		@props.addFavorite 'youtube:dQw4w9WgXcQ'
