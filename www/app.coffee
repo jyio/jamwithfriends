@@ -301,7 +301,7 @@ Playlist = React.createClass
 					for item in @state.resultset
 						PlaylistItem
 							key:		item
-							request:	request
+							request:	@props.request
 							vidkey: 	item
 							addFavorite:	@props.addFavorite
 							removeFavorite:	@props.removeFavorite

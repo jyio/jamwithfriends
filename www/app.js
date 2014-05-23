@@ -556,7 +556,7 @@ Playlist = React.createClass({
         item = _ref[_i];
         _results.push(PlaylistItem({
           key: item,
-          request: request,
+          request: this.props.request,
           vidkey: item,
           addFavorite: this.props.addFavorite,
           removeFavorite: this.props.removeFavorite
