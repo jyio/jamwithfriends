@@ -281,6 +281,15 @@ Playlist = React.createClass
 							type:		'text'
 							className:	'form-control'
 							onChange:	(evt) => @search evt.target.value
+							onKeyUp:	(evt) =>
+								if evt.keyCode == 27	# esc
+									@searchclear()
+								else if evt.keyCode == 13 and @state.resultset.length > 0	# enter
+									vidkey = @state.resultset[0]
+									if vidkey of @props.request
+										@props.removeFavorite vidkey
+									else
+										@props.addFavorite vidkey
 							placeholder:	'Search or URL: YouTube | SoundCloud'
 							value:		@state.query
 						R.div {className: 'input-group-btn'},

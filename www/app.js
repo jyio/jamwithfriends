@@ -507,6 +507,21 @@ Playlist = React.createClass({
           return _this.search(evt.target.value);
         };
       })(this),
+      onKeyUp: (function(_this) {
+        return function(evt) {
+          var vidkey;
+          if (evt.keyCode === 27) {
+            return _this.searchclear();
+          } else if (evt.keyCode === 13 && _this.state.resultset.length > 0) {
+            vidkey = _this.state.resultset[0];
+            if (vidkey in _this.props.request) {
+              return _this.props.removeFavorite(vidkey);
+            } else {
+              return _this.props.addFavorite(vidkey);
+            }
+          }
+        };
+      })(this),
       placeholder: 'Search or URL: YouTube | SoundCloud',
       value: this.state.query
     }), R.div({
