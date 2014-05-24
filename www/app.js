@@ -748,6 +748,7 @@ App = React.createClass({
     }
   },
   componentDidMount: function() {
+    this.persist();
     this.sendRequest();
     sock.on('connect', (function(_this) {
       return function() {

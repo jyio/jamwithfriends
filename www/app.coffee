@@ -408,6 +408,7 @@ App = React.createClass
 				@sendRequest()
 			@persist()
 	componentDidMount: ->
+		@persist()
 		@sendRequest()
 		sock.on 'connect', =>
 			@setState
