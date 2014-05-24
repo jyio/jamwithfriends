@@ -369,10 +369,103 @@ Preset = React.createClass
 		@props.addFavorite 'youtube:vIM3tVCi0wg'
 		@props.addFavorite 'youtube:j5U8lXoW2EM'
 
+MessagelistItem = React.createClass
+	getInitialState: ->
+		title:		@props.playing
+	componentDidMount: ->
+		if @props.playing
+			fetchdata @props.playing
+				.done (data) =>
+					@setState
+						title:		data.title
+	render: ->
+		namebar = []
+		if @props.snick
+			namebar.push R.strong null, @props.snick
+			namebar.push ' '
+		if @props.playing
+			namebar.push R.span {className: 'label label-default'},
+				R.i
+					className:	'glyphicon glyphicon-headphones'
+				' '
+				@state.title
+		R.div {className: 'row', style: {borderBottom: '1px solid #777'}},
+			R.div {className: 'col-sm-2'},
+				R.img
+					src:	'http://robohash.org/' + @props.src + '.png?size=48x48'
+			R.div {className: 'col-sm-10', style: {margin: '0.5em auto'}},
+				R.div {style: {whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}, namebar
+				@props.body
+
+Messagelist = React.createClass
+	getInitialState: ->
+		history:	[]
+	componentDidMount: ->
+		sock.on 'chathistory', (msg) =>
+			@setState
+				history:	msg.history
+		sock.on 'chat', (msg) =>
+			@state.history.unshift msg
+			while @state.history.length > 32
+				@state.history.pop()
+			@setState
+				history:	@state.history
+	render: ->
+		R.div null,
+			R.div {className: 'row'},
+				R.div {className: 'col-md-6'},
+					R.h1 {style: {marginTop: '0'}}, 'Messages'
+				R.div {className: 'col-md-6'},
+					R.div {className: 'input-group'},
+						R.i
+							className:	'input-group-addon glyphicon glyphicon-user'
+						R.input
+							type:		'text'
+							className:	'form-control'
+							onKeyUp:	(evt) =>
+								if evt.keyCode == 27	# esc
+									evt.target.value = ''
+								else if evt.keyCode == 13	# enter
+									val = trim evt.target.value
+									if val.length > 0
+										@sendNick val
+										evt.target.value = ''
+							placeholder:	@props.nick
+			R.div {className: 'input-group'},
+				R.i
+					className:	'input-group-addon glyphicon glyphicon-envelope'
+				R.input
+					type:		'text'
+					className:	'form-control'
+					onKeyUp:	(evt) =>
+						if evt.keyCode == 27	# esc
+							evt.target.value = ''
+						else if evt.keyCode == 13	# enter
+							val = trim evt.target.value
+							if val.length > 0
+								@sendChat val
+								evt.target.value = ''
+					placeholder:	'Send a message'
+			R.div null,
+				for msg in @state.history
+					MessagelistItem
+						time:	msg.time
+						src:	msg.src
+						snick:	msg.snick
+						playing:	msg.playing
+						body:	msg.body
+	sendNick: (msg) ->
+		sock.emit 'nick',
+			nick: msg
+	sendChat: (msg) ->
+		sock.emit 'chat',
+			body: msg
+
 App = React.createClass
 	getInitialState: ->
 		r =
-			id:			randomid()
+			id:		''
+			cid:		randomid()
 			nick:		'User'
 			connected:	false
 			favorite:	[]
@@ -380,13 +473,13 @@ App = React.createClass
 		jam = $.cookie 'jam.' + @props.channel
 		if jam and jam.v >= 1
 			r.favorite = jam.f
-			if jam.id
-				r.id = jam.id
+			if jam.cid
+				r.cid = jam.cid
 			if jam.nick
 				r.nick = jam.nick
 		r
 	persist: ->
-		$.cookie 'jam.' + @props.channel, {v: 1, id: @state.id, nick: @state.nick, f: @state.favorite}, {expires: 14}
+		$.cookie 'jam.' + @props.channel, {v: 1, cid: @state.cid, nick: @state.nick, f: @state.favorite}, {expires: 14}
 	sendRequest: ->
 		sock.emit 'tdelta', time.time()
 		sock.emit 'request', @state.favorite
@@ -415,13 +508,16 @@ App = React.createClass
 			@setState
 				connected:	true
 			sock.emit 'user',
-				id:		@state.id
+				cid:	@state.cid
 				nick:	@state.nick
 			sock.emit 'join', channel
 			@sendRequest()
 		sock.on 'disconnect', =>
 			@setState
 				connected:	false
+		sock.on 'user', (msg) =>
+			@setState
+				id:	msg.id
 		sock.on 'tdelta', (msg) ->
 			time.tdeltalist.push msg
 			time.tdelta = (time.tdeltalist.reduce (a, b) -> a + b) / time.tdeltalist.length
@@ -440,6 +536,10 @@ App = React.createClass
 			@state.nickname[msg.id] = msg.nick
 			@setState
 				nickname:	@state.nickname
+			if msg.id == @state.id
+				@setState
+					nick:	msg.nick
+				@persist()
 	render: ->
 		request = {}
 		request[i] = true for i in @state.favorite
@@ -485,5 +585,8 @@ App = React.createClass
 							R.div {className: 'col-md-12'},
 								Preset
 									addFavorite:	@addFavorite
+					R.div {className: 'col-md-4'},
+						Messagelist
+							nick:		@state.nick
 
 React.renderComponent App({channel: channel}), document.getElementById 'app'

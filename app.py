@@ -201,6 +201,7 @@ class Channel(object):
 		self.quorum = 1
 		self.playloop = Playloop()
 		self.playing = None
+		self.chathistory = deque(maxlen=16)
 	def request(self, sock=None, req=None):
 		if sock is not None and sock.session['userhash'] in self.participant:
 			if self.playloop.request(sock.session['userhash'], req):
@@ -257,6 +258,7 @@ class Channel(object):
 		self.emit('queue', {'queue': list(self.playloop.queue)})
 		if self.playing is not None:
 			self.emit_one(sock, 'play', self.playing)
+		self.emit_one(sock, 'chathistory', {'history': list(self.chathistory)})
 		return sock
 	def part(self, sock):
 		try:
@@ -282,6 +284,18 @@ class Channel(object):
 			return sock
 		except KeyError:
 			return None
+	def nick(self, sock):
+		userhash = sock.session['userhash']
+		usernick = sock.session['usernick']
+		if userhash in self.participant and usernick != self.nickname[userhash]:
+			self.nickname[userhash] = usernick
+			self.emit('nick', {'id': userhash, 'nick': usernick})
+	def chat(self, sock, body):
+		if sock is not None and sock.session['userhash'] in self.participant:
+			userhash = sock.session['userhash']
+			msg = {'time': time.time(), 'src': userhash, 'snick': self.nickname[userhash], 'playing': None if self.playing is None else self.playing['vidkey'], 'body': body}
+			self.chathistory.appendleft(msg)
+			self.emit('chat', msg)
 	def emit(self, event, args):
 		pkt = {
 			'type':		'event',
@@ -321,8 +335,19 @@ class SocketManager(BaseNamespace, BroadcastMixin, RoomsMixin):
 		self.channel_part()
 	def on_user(self, msg):
 		if 'userhash' not in self.session:
-			self.session['userhash'] = hashhash(msg['id'])
+			self.session['userhash'] = hashhash(msg['cid'])
 			self.session['usernick'] = msg['nick']
+			self.emit('user', {'id': self.session['userhash']})
+	def on_nick(self, msg):
+		if 'userhash' in self.session:
+			self.session['usernick'] = msg['nick']
+			try:
+				channel = self.session['channel']
+				if channel is None:
+					return
+			except KeyError:
+				return
+			channel.nick(self.socket)
 	def on_join(self, msg):
 		if 'userhash' in self.session:
 			self.channel_join(msg)
@@ -347,6 +372,15 @@ class SocketManager(BaseNamespace, BroadcastMixin, RoomsMixin):
 			except KeyError:
 				return
 			channel.stop(self.socket, msg['vidkey'])
+	def on_chat(self, msg):
+		if 'userhash' in self.session:
+			try:
+				channel = self.session['channel']
+				if channel is None:
+					return
+			except KeyError:
+				return
+			channel.chat(self.socket, msg['body'])
 
 def appfactory():
 	app = Bottle()
