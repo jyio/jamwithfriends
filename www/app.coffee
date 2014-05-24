@@ -113,6 +113,15 @@ lpad = (n, width, z) ->
 	n = n + ''
 	if n.length >= width then n else new Array(width - n.length + 1).join(z) + n
 
+randomid = ->
+	self = arguments.callee
+	Math.floor(Math.random() * 9.007199e15).toString(32).replace /[ilou]/, (a) -> self.crockford[a]
+randomid.crockford =
+	i:	'w'
+	l:	'x'
+	o:	'y'
+	u:	'z'
+
 PlayerHead = React.createClass
 	getInitialState: ->
 		title:		@props.vidkey
@@ -362,15 +371,21 @@ Playlist = React.createClass
 App = React.createClass
 	getInitialState: ->
 		r =
+			id:			randomid()
+			name:		'User'
 			connected:	false
 			favorite:	[]
 		jam = $.cookie 'jam.' + @props.channel
 		if jam and jam.v >= 1
 			r.favorite = jam.f
+			if jam.id
+				r.id = jam.id
+			if jam.name
+				r.name = jam.name
 		r.count = 1
 		r
 	persist: ->
-		$.cookie 'jam.' + @props.channel, {v: 1, f: @state.favorite}, {expires: 14}
+		$.cookie 'jam.' + @props.channel, {v: 1, id: @state.id, name: @state.name, f: @state.favorite}, {expires: 14}
 	sendRequest: ->
 		sock.emit 'tdelta', time.time()
 		sock.emit 'request', @state.favorite
@@ -397,6 +412,9 @@ App = React.createClass
 		sock.on 'connect', =>
 			@setState
 				connected:	true
+			sock.emit 'user',
+				id:		@state.id
+				name:	@state.name
 			sock.emit 'join', channel
 			@sendRequest()
 		sock.on 'disconnect', =>

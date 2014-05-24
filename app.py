@@ -4,6 +4,7 @@ import re
 import json
 import math
 import time
+import hashlib
 import weakref
 
 from collections import Counter, deque
@@ -49,6 +50,31 @@ class memottl(object):
 			except TypeError:
 				return f(*args)
 		return wrapped_f
+
+def baseencode(number, alphabet='0123456789abcdefghijklmnopqrstuvwxyz'):
+	if not isinstance(number, (int, long)):
+	    raise TypeError('number must be an integer')
+	result = ''
+	sign = ''
+	if number < 0:
+	    sign = '-'
+	    number = -number
+	if 0 <= number < len(alphabet):
+	    return sign + alphabet[number]
+	while number != 0:
+	    number, i = divmod(number, len(alphabet))
+	    result = alphabet[i] + result
+	return sign + result
+
+def base32encode(number):
+	return baseencode(number, '0123456789abcdefghjkmnpqrstvwxyz')
+
+def hashhash(s, times=8):
+	fn = hashlib.sha1
+	salt = s
+	for i in xrange(times):
+		s = fn(salt + s).digest()
+	return 'sha1.' + str(times) + '.' + base32encode(int(s.encode('hex'), 16))
 
 def filter_vidkey(vidkey):
 	svc, subkey = vidkey.split(':', 1)
@@ -161,20 +187,22 @@ class Playloop(object):
 			self.rehash()
 			return True
 		return False
+	def getkey(self, value):
+		return (k for k, v in self.req.iteritems() if value in v)
 
 class Channel(object):
 	def __init__(self, namespace, name):
 		self.namespace = namespace
 		self.name = name
 		self.sock = weakref.WeakSet()
-		self.participant = weakref.WeakSet()
-		self.set_ended = weakref.WeakSet()
+		self.participant = {}
+		self.set_ended = set()
 		self.quorum = 1
 		self.playloop = Playloop()
 		self.playing = None
-	def play(self, sock=None, request=None):
-		if sock in self.participant:
-			if self.playloop.request(sock, request):
+	def play(self, sock=None, req=None):
+		if sock is not None and sock.session['userhash'] in self.participant:
+			if self.playloop.request(sock.session['userhash'], req):
 				self.emit('queue', {'queue': list(self.playloop.queue)})
 		if self.playing is None:
 			vidkey = self.playloop.next()
@@ -187,13 +215,14 @@ class Channel(object):
 						'url':		data['url'],
 						'title':	data['title'],
 						'format':	data['format'],
-						'time':		time.time()
+						'requester':	list(self.playloop.getkey(vidkey)),
+						'time':		time.time(),
 					}
 					self.emit('play', self.playing)
 			self.emit('queue', {'queue': list(self.playloop.queue)})
 	def ended(self, sock=None, vidkey=None):
-		if sock is not None and self.playing is not None and self.playing['vidkey'] == vidkey and sock in self.participant:
-			self.set_ended.add(sock)
+		if sock is not None and self.playing is not None and self.playing['vidkey'] == vidkey and sock.session['userhash'] in self.participant:
+			self.set_ended.add(sock.session['userhash'])
 		if len(self.set_ended) >= self.quorum:
 			print 'ENDED', len(self.set_ended)
 			self.playing = None
@@ -207,8 +236,11 @@ class Channel(object):
 	def join(self, sock):
 		if 'channel' in sock.session and sock.session['channel'] is not None:
 			sock.session['channel'].part(sock)
+		userhash = sock.session['userhash']
 		self.sock.add(sock)
-		self.participant.add(sock)
+		if userhash not in self.participant:
+			self.participant[userhash] = weakref.WeakSet()
+		self.participant[userhash].add(sock)
 		self.rehash_quorum()
 		sock.session['channel'] = self
 		self.emit('queue', {'queue': list(self.playloop.queue)})
@@ -220,19 +252,22 @@ class Channel(object):
 		try:
 			self.sock.remove(sock)
 			sock.session['channel'] = None
+			userhash = sock.session['userhash']
 			try:
-				self.participant.remove(sock)
+				self.set_ended.remove(userhash)
 			except KeyError:
 				pass
 			try:
-				self.set_ended.remove(sock)
+				self.participant[userhash].remove(sock)
+				if len(self.participant[userhash]) < 1:
+					del self.participant[userhash]
+					self.rehash_quorum()
+					if self.playloop.request(sock, None):
+						self.emit('queue', {'queue': list(self.playloop.queue)})
+					self.emit('count', {'participant': len(self.participant)})
+					self.ended()
 			except KeyError:
 				pass
-			self.rehash_quorum()
-			if self.playloop.request(sock, None):
-				self.emit('queue', {'queue': list(self.playloop.queue)})
-			self.emit('count', {'participant': len(self.participant)})
-			self.ended()
 			return sock
 		except KeyError:
 			return None
@@ -273,28 +308,34 @@ class SocketManager(BaseNamespace, BroadcastMixin, RoomsMixin):
 	def recv_disconnect(self):
 		print 'disconnect', self.socket.sessid
 		self.channel_part()
+	def on_user(self, msg):
+		if 'userhash' not in self.session:
+			self.session['userhash'] = hashhash(msg['id'])
+			self.session['username'] = msg['name']
 	def on_join(self, msg):
-		self.channel_join(msg)
-		print self.session['channel'].name
+		if 'userhash' in self.session:
+			self.channel_join(msg)
 	def on_tdelta(self, msg):
 		self.emit('tdelta', time.time() - msg)
 	def on_request(self, msg):
-		try:
-			channel = self.session['channel']
-			if channel is None:
+		if 'userhash' in self.session:
+			try:
+				channel = self.session['channel']
+				if channel is None:
+					return
+			except KeyError:
 				return
-		except KeyError:
-			return
-		request = set(vidkey for vidkey in msg if isinstance(vidkey, basestring) and filter_vidkey(vidkey))
-		channel.play(self.socket, request)
+			req = set(vidkey for vidkey in msg if isinstance(vidkey, basestring) and filter_vidkey(vidkey))
+			channel.play(self.socket, req)
 	def on_end(self, msg):
-		try:
-			channel = self.session['channel']
-			if channel is None:
+		if 'userhash' in self.session:
+			try:
+				channel = self.session['channel']
+				if channel is None:
+					return
+			except KeyError:
 				return
-		except KeyError:
-			return
-		channel.ended(self.socket, msg['vidkey'])
+			channel.ended(self.socket, msg['vidkey'])
 
 def appfactory():
 	app = Bottle()
