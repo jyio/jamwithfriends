@@ -71,7 +71,7 @@ def base32encode(number):
 
 def hashhash(s, times=8):
 	fn = hashlib.sha1
-	salt = s
+	salt = buffer(s)
 	for i in xrange(times):
 		s = fn(salt + s).digest()
 	return 'sha1.' + str(times) + '.' + base32encode(int(s.encode('hex'), 16))
