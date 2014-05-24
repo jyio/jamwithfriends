@@ -301,7 +301,7 @@ PlayerAudio = React.createClass({
       node.addEventListener('canplay', function() {
         this.removeEventListener('canplay', arguments.callee);
         this.addEventListener('ended', function() {
-          return sock.emit('end', {
+          return sock.emit('stop', {
             vidkey: self.props.vidkey,
             reason: 'end'
           });
@@ -314,7 +314,7 @@ PlayerAudio = React.createClass({
       });
       errback = function(evt) {
         if (node.currentSrc === '') {
-          return sock.emit('end', {
+          return sock.emit('stop', {
             vidkey: self.props.vidkey,
             reason: 'error'
           });
@@ -419,7 +419,7 @@ Player = React.createClass({
       this.setState({
         vidkey: null
       });
-      return sock.emit('end', {
+      return sock.emit('stop', {
         vidkey: vidkey,
         reason: 'skip'
       });

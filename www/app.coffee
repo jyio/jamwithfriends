@@ -166,7 +166,7 @@ PlayerAudio = React.createClass
 			node.addEventListener 'canplay', ->
 				@removeEventListener 'canplay', arguments.callee
 				@addEventListener 'ended', ->
-					sock.emit 'end',
+					sock.emit 'stop',
 						vidkey:	self.props.vidkey
 						reason:	'end'
 				@currentTime = time.synctime() - self.props.time
@@ -174,7 +174,7 @@ PlayerAudio = React.createClass
 			node.addEventListener 'volumechange', -> self.props.setvolume @volume, @muted
 			errback = (evt) ->
 				if node.currentSrc == ''
-					sock.emit 'end',
+					sock.emit 'stop',
 						vidkey:	self.props.vidkey
 						reason:	'error'
 				else if node.networkState == 3
@@ -239,7 +239,7 @@ Player = React.createClass
 		if vidkey
 			@setState
 				vidkey:	null
-			sock.emit 'end',
+			sock.emit 'stop',
 				vidkey:	vidkey
 				reason:	'skip'
 

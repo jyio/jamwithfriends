@@ -200,7 +200,7 @@ class Channel(object):
 		self.quorum = 1
 		self.playloop = Playloop()
 		self.playing = None
-	def play(self, sock=None, req=None):
+	def request(self, sock=None, req=None):
 		if sock is not None and sock.session['userhash'] in self.participant:
 			if self.playloop.request(sock.session['userhash'], req):
 				self.emit('queue', {'queue': list(self.playloop.queue)})
@@ -220,13 +220,13 @@ class Channel(object):
 					}
 					self.emit('play', self.playing)
 			self.emit('queue', {'queue': list(self.playloop.queue)})
-	def ended(self, sock=None, vidkey=None):
+	def stop(self, sock=None, vidkey=None):
 		if sock is not None and self.playing is not None and self.playing['vidkey'] == vidkey and sock.session['userhash'] in self.participant:
 			self.set_ended.add(sock.session['userhash'])
 		if len(self.set_ended) >= self.quorum:
 			print 'ENDED', len(self.set_ended)
 			self.playing = None
-			self.play()
+			self.request()
 	def rehash_quorum(self):
 		try:
 			self.quorum = int(max(1, math.ceil(math.log(len(self.participant)))))
@@ -265,7 +265,7 @@ class Channel(object):
 					if self.playloop.request(sock, None):
 						self.emit('queue', {'queue': list(self.playloop.queue)})
 					self.emit('count', {'participant': len(self.participant)})
-					self.ended()
+					self.stop()
 			except KeyError:
 				pass
 			return sock
@@ -326,8 +326,8 @@ class SocketManager(BaseNamespace, BroadcastMixin, RoomsMixin):
 			except KeyError:
 				return
 			req = set(vidkey for vidkey in msg if isinstance(vidkey, basestring) and filter_vidkey(vidkey))
-			channel.play(self.socket, req)
-	def on_end(self, msg):
+			channel.request(self.socket, req)
+	def on_stop(self, msg):
 		if 'userhash' in self.session:
 			try:
 				channel = self.session['channel']
@@ -335,7 +335,7 @@ class SocketManager(BaseNamespace, BroadcastMixin, RoomsMixin):
 					return
 			except KeyError:
 				return
-			channel.ended(self.socket, msg['vidkey'])
+			channel.stop(self.socket, msg['vidkey'])
 
 def appfactory():
 	app = Bottle()
