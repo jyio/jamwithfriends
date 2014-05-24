@@ -138,7 +138,7 @@ PlayerHead = React.createClass
 	render: ->
 		requested = @props.vidkey of @props.request
 		document.title = "#{@state.title} - #{channel} - jam with friends"
-		R.div {style: {textAlign: 'center', margin: '0.15em auto'}},
+		R.div {style: {margin: '0.15em auto', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}},
 			R.span {className: ('label label-' + if requested then 'success' else 'default'), style: {fontWeight: 'bold'}, onClick: (evt) => (if requested then @props.removeFavorite else @props.addFavorite) @props.vidkey},
 				R.i
 					className: 'glyphicon glyphicon-' + if requested then 'heart' else 'heart-empty'
@@ -281,39 +281,28 @@ Playlist = React.createClass
 				queue:	msg.queue
 	render: ->
 		R.div null,
-			R.div {className: 'row'},
-				R.div {className: 'col-md-8'},
-					R.div {className: 'input-group'},
+			R.div {className: 'input-group'},
+				R.i
+					className:	'input-group-addon glyphicon glyphicon-search'
+				R.input
+					type:		'text'
+					className:	'form-control'
+					onChange:	(evt) => @search evt.target.value
+					onKeyUp:	(evt) =>
+						if evt.keyCode == 27	# esc
+							@searchclear()
+						else if evt.keyCode == 13 and @state.resultset.length > 0	# enter
+							vidkey = @state.resultset[0]
+							if vidkey of @props.request
+								@props.removeFavorite vidkey
+							else
+								@props.addFavorite vidkey
+					placeholder:	'Search or URL: YouTube | SoundCloud'
+					value:		@state.query
+				R.div {className: 'input-group-btn'},
+					R.button {className: 'btn btn-default', onClick: @searchclear},
 						R.i
-							className:	'input-group-addon glyphicon glyphicon-search'
-						R.input
-							type:		'text'
-							className:	'form-control'
-							onChange:	(evt) => @search evt.target.value
-							onKeyUp:	(evt) =>
-								if evt.keyCode == 27	# esc
-									@searchclear()
-								else if evt.keyCode == 13 and @state.resultset.length > 0	# enter
-									vidkey = @state.resultset[0]
-									if vidkey of @props.request
-										@props.removeFavorite vidkey
-									else
-										@props.addFavorite vidkey
-							placeholder:	'Search or URL: YouTube | SoundCloud'
-							value:		@state.query
-						R.div {className: 'input-group-btn'},
-							R.button {className: 'btn btn-default', onClick: @searchclear},
-								R.i
-									className:	'glyphicon glyphicon-remove-circle'
-				R.div {className: 'col-md-4', style: {textAlign: 'right'}},
-					R.button {className: 'btn btn-default', onClick: (evt) => @addRick()},
-						'+Rick'
-					' '
-					R.button {className: 'btn btn-default', onClick: (evt) => @addKHS()},
-						'+KHS'
-					' '
-					R.button {className: 'btn btn-default', onClick: (evt) => @addEDM()},
-						'+EDM'
+							className:	'glyphicon glyphicon-remove-circle'
 			R.table {className: 'table', style: {display: (if @state.resultset.length > 0 then 'block' else 'none'), fontSize: '1em'}},
 				R.tbody null,
 					for item in @state.resultset
@@ -356,6 +345,18 @@ Playlist = React.createClass
 						@setState
 							resultset: (normalize result.link[0].href for result in data.feed.entry)
 	, 500
+
+Preset = React.createClass
+	render: ->
+		R.div null,
+			R.button {className: 'btn btn-default', onClick: (evt) => @addRick()},
+				'+Rick'
+			' '
+			R.button {className: 'btn btn-default', onClick: (evt) => @addKHS()},
+				'+KHS'
+			' '
+			R.button {className: 'btn btn-default', onClick: (evt) => @addEDM()},
+				'+EDM'
 	addRick: ->
 		@props.addFavorite 'youtube:dQw4w9WgXcQ'
 		@props.addFavorite 'youtube:5zFh5euYntU'
@@ -460,23 +461,29 @@ App = React.createClass
 							for c in ['bluejam', 'thh', 'epiccyndaquil', 'mop', 'pwnna', 'crispy']
 								R.li {className: if channel == c then 'active' else ''}, R.a {href: '/c/' + c}, c
 			R.div {className: 'container'},
-				R.div {className: 'row', style: {marginBottom: '1.2em'}},
-					R.div {className: 'col-md-4'},
-						R.h1 {style: {margin: '0'}},
-							R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{channel}"
-							if @state.connected then " | #{count}" else ''
-						R.h3 {style: {margin: '0'}},
-							R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{window.location.host}/c/#{channel}"
-					R.div {className: 'col-md-8', style: {marginTop: '0.5em'}},
-						Player
-							request:		request
-							addFavorite:	@addFavorite
-							removeFavorite:	@removeFavorite
 				R.div {className: 'row'},
-					R.div {className: 'col-md-12'},
-						Playlist
-							request:		request
-							addFavorite:	@addFavorite
-							removeFavorite:	@removeFavorite
+					R.div {className: 'col-md-8'},
+						R.div {className: 'row', style: {marginBottom: '1.2em'}},
+							R.div {className: 'col-md-6'},
+								R.h1 {style: {margin: '0'}},
+									R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{channel}"
+									if @state.connected then " | #{count}" else ''
+								R.h3 {style: {margin: '0'}},
+									R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{window.location.host}/c/#{channel}"
+							R.div {className: 'col-md-6', style: {marginTop: '0.5em'}},
+								Player
+									request:		request
+									addFavorite:	@addFavorite
+									removeFavorite:	@removeFavorite
+						R.div {className: 'row'},
+							R.div {className: 'col-md-12'},
+								Playlist
+									request:		request
+									addFavorite:	@addFavorite
+									removeFavorite:	@removeFavorite
+						R.div {className: 'row'},
+							R.div {className: 'col-md-12'},
+								Preset
+									addFavorite:	@addFavorite
 
 React.renderComponent App({channel: channel}), document.getElementById 'app'
