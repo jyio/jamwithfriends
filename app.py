@@ -196,6 +196,7 @@ class Channel(object):
 		self.name = name
 		self.sock = weakref.WeakSet()
 		self.participant = {}
+		self.nickname = {}
 		self.set_ended = set()
 		self.quorum = 1
 		self.playloop = Playloop()
@@ -240,11 +241,20 @@ class Channel(object):
 		self.sock.add(sock)
 		if userhash not in self.participant:
 			self.participant[userhash] = weakref.WeakSet()
+			self.emit('join', {'id': userhash})
+		else:
+			self.emit_one(sock, 'join', {'id': userhash})
 		self.participant[userhash].add(sock)
 		self.rehash_quorum()
+		usernick = sock.session['usernick']
+		if userhash not in self.nickname or usernick != self.nickname[userhash]:
+			self.nickname[userhash] = usernick
+			self.emit('nick', {'id': userhash, 'nick': usernick})
+		else:
+			self.emit_one(sock, 'nick', {'id': userhash, 'nick': usernick})
 		sock.session['channel'] = self
+		self.emit_one(sock, 'nicks', self.nickname)
 		self.emit('queue', {'queue': list(self.playloop.queue)})
-		self.emit('count', {'participant': len(self.participant)})
 		if self.playing is not None:
 			self.emit_one(sock, 'play', self.playing)
 		return sock
@@ -262,9 +272,10 @@ class Channel(object):
 				if len(self.participant[userhash]) < 1:
 					del self.participant[userhash]
 					self.rehash_quorum()
+					del self.nickname[userhash]
+					self.emit('part', {'id': userhash})
 					if self.playloop.request(sock, None):
 						self.emit('queue', {'queue': list(self.playloop.queue)})
-					self.emit('count', {'participant': len(self.participant)})
 					self.stop()
 			except KeyError:
 				pass
@@ -311,7 +322,7 @@ class SocketManager(BaseNamespace, BroadcastMixin, RoomsMixin):
 	def on_user(self, msg):
 		if 'userhash' not in self.session:
 			self.session['userhash'] = hashhash(msg['id'])
-			self.session['username'] = msg['name']
+			self.session['usernick'] = msg['nick']
 	def on_join(self, msg):
 		if 'userhash' in self.session:
 			self.channel_join(msg)

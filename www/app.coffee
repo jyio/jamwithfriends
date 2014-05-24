@@ -372,20 +372,20 @@ App = React.createClass
 	getInitialState: ->
 		r =
 			id:			randomid()
-			name:		'User'
+			nick:		'User'
 			connected:	false
 			favorite:	[]
+			nickname:	{}
 		jam = $.cookie 'jam.' + @props.channel
 		if jam and jam.v >= 1
 			r.favorite = jam.f
 			if jam.id
 				r.id = jam.id
-			if jam.name
-				r.name = jam.name
-		r.count = 1
+			if jam.nick
+				r.nick = jam.nick
 		r
 	persist: ->
-		$.cookie 'jam.' + @props.channel, {v: 1, id: @state.id, name: @state.name, f: @state.favorite}, {expires: 14}
+		$.cookie 'jam.' + @props.channel, {v: 1, id: @state.id, nick: @state.nick, f: @state.favorite}, {expires: 14}
 	sendRequest: ->
 		sock.emit 'tdelta', time.time()
 		sock.emit 'request', @state.favorite
@@ -415,7 +415,7 @@ App = React.createClass
 				connected:	true
 			sock.emit 'user',
 				id:		@state.id
-				name:	@state.name
+				nick:	@state.nick
 			sock.emit 'join', channel
 			@sendRequest()
 		sock.on 'disconnect', =>
@@ -424,12 +424,27 @@ App = React.createClass
 		sock.on 'tdelta', (msg) ->
 			time.tdeltalist.push msg
 			time.tdelta = (time.tdeltalist.reduce (a, b) -> a + b) / time.tdeltalist.length
-		sock.on 'count', (msg) =>
+		sock.on 'nicks', (msg) =>
 			@setState
-				count:	msg.participant
+				nickname:	msg
+		sock.on 'join', (msg) =>
+			@state.nickname[msg.id] = 'User'
+			@setState
+				nickname:	@state.nickname
+		sock.on 'part', (msg) =>
+			delete @state.nickname[msg.id]
+			@setState
+				nickname:	@state.nickname
+		sock.on 'nick', (msg) =>
+			@state.nickname[msg.id] = msg.nick
+			@setState
+				nickname:	@state.nickname
 	render: ->
 		request = {}
 		request[i] = true for i in @state.favorite
+		count = 0
+		for k of @state.nickname
+			count++
 		R.div null,
 			R.div {className: 'navbar navbar-default navbar-fixed-top', role: 'navigation'},
 				R.div {className: 'container'},
@@ -449,7 +464,7 @@ App = React.createClass
 					R.div {className: 'col-md-4'},
 						R.h1 {style: {margin: '0'}},
 							R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{channel}"
-							if @state.connected then " | #{@state.count}" else ''
+							if @state.connected then " | #{count}" else ''
 						R.h3 {style: {margin: '0'}},
 							R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{window.location.host}/c/#{channel}"
 					R.div {className: 'col-md-8', style: {marginTop: '0.5em'}},

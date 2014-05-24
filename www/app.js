@@ -682,9 +682,10 @@ App = React.createClass({
     var jam, r;
     r = {
       id: randomid(),
-      name: 'User',
+      nick: 'User',
       connected: false,
-      favorite: []
+      favorite: [],
+      nickname: {}
     };
     jam = $.cookie('jam.' + this.props.channel);
     if (jam && jam.v >= 1) {
@@ -692,18 +693,17 @@ App = React.createClass({
       if (jam.id) {
         r.id = jam.id;
       }
-      if (jam.name) {
-        r.name = jam.name;
+      if (jam.nick) {
+        r.nick = jam.nick;
       }
     }
-    r.count = 1;
     return r;
   },
   persist: function() {
     return $.cookie('jam.' + this.props.channel, {
       v: 1,
       id: this.state.id,
-      name: this.state.name,
+      nick: this.state.nick,
       f: this.state.favorite
     }, {
       expires: 14
@@ -757,7 +757,7 @@ App = React.createClass({
         });
         sock.emit('user', {
           id: _this.state.id,
-          name: _this.state.name
+          nick: _this.state.nick
         });
         sock.emit('join', channel);
         return _this.sendRequest();
@@ -776,21 +776,49 @@ App = React.createClass({
         return a + b;
       })) / time.tdeltalist.length;
     });
-    return sock.on('count', (function(_this) {
+    sock.on('nicks', (function(_this) {
       return function(msg) {
         return _this.setState({
-          count: msg.participant
+          nickname: msg
+        });
+      };
+    })(this));
+    sock.on('join', (function(_this) {
+      return function(msg) {
+        _this.state.nickname[msg.id] = 'User';
+        return _this.setState({
+          nickname: _this.state.nickname
+        });
+      };
+    })(this));
+    sock.on('part', (function(_this) {
+      return function(msg) {
+        delete _this.state.nickname[msg.id];
+        return _this.setState({
+          nickname: _this.state.nickname
+        });
+      };
+    })(this));
+    return sock.on('nick', (function(_this) {
+      return function(msg) {
+        _this.state.nickname[msg.id] = msg.nick;
+        return _this.setState({
+          nickname: _this.state.nickname
         });
       };
     })(this));
   },
   render: function() {
-    var c, i, request, _i, _len, _ref;
+    var c, count, i, k, request, _i, _len, _ref;
     request = {};
     _ref = this.state.favorite;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       i = _ref[_i];
       request[i] = true;
+    }
+    count = 0;
+    for (k in this.state.nickname) {
+      count++;
     }
     return R.div(null, R.div({
       className: 'navbar navbar-default navbar-fixed-top',
@@ -850,7 +878,7 @@ App = React.createClass({
       style: {
         color: '#fff'
       }
-    }, "" + channel), this.state.connected ? " | " + this.state.count : ''), R.h3({
+    }, "" + channel), this.state.connected ? " | " + count : ''), R.h3({
       style: {
         margin: '0'
       }
