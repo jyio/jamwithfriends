@@ -276,7 +276,7 @@ class Channel(object):
 					self.rehash_quorum()
 					del self.nickname[userhash]
 					self.emit('part', {'id': userhash})
-					if self.playloop.request(sock, None):
+					if self.playloop.request(sock.session['userhash'], None):
 						self.emit('queue', {'queue': list(self.playloop.queue)})
 					self.stop()
 			except KeyError:
