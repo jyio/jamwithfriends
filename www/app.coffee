@@ -122,6 +122,31 @@ randomid.crockford =
 	o:	'y'
 	u:	'z'
 
+Navbar = React.createClass
+	render: ->
+		R.div {className: 'navbar navbar-default navbar-fixed-top', role: 'navigation'},
+			R.div {className: 'container'},
+				R.div {className: 'navbar-header'},
+					R.button {className: 'navbar-toggle', type: 'button', 'data-toggle': 'collapse', 'data-target': '.navbar-collapse'},
+						R.span {className: 'sr-only'}, 'Toggle navigation'
+						R.span {className: 'icon-bar'}
+						R.span {className: 'icon-bar'}
+						R.span {className: 'icon-bar'}
+					R.a {className: 'navbar-brand', href: '#'}, 'jam with friends'
+				R.div {className: 'collapse navbar-collapse'},
+					R.ul {className: 'nav navbar-nav'},
+						for c in ['bluejam', 'thh', 'epiccyndaquil', 'mop', 'pwnna', 'crispy']
+							R.li {className: if channel == c then 'active' else ''}, R.a {href: '/c/' + c}, c
+
+Titleblock = React.createClass
+	render: ->
+		R.div null,
+			R.h1 {style: {margin: '0'}},
+				R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{channel}"
+				if @props.connected then " | #{@props.count}" else ''
+			R.h3 {style: {margin: '0'}},
+				R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{window.location.host}/c/#{channel}"
+
 PlayerHead = React.createClass
 	getInitialState: ->
 		title:		@props.vidkey
@@ -547,29 +572,15 @@ App = React.createClass
 		for k of @state.nickname
 			count++
 		R.div null,
-			R.div {className: 'navbar navbar-default navbar-fixed-top', role: 'navigation'},
-				R.div {className: 'container'},
-					R.div {className: 'navbar-header'},
-						R.button {className: 'navbar-toggle', type: 'button', 'data-toggle': 'collapse', 'data-target': '.navbar-collapse'},
-							R.span {className: 'sr-only'}, 'Toggle navigation'
-							R.span {className: 'icon-bar'}
-							R.span {className: 'icon-bar'}
-							R.span {className: 'icon-bar'}
-						R.a {className: 'navbar-brand', href: '#'}, 'jam with friends'
-					R.div {className: 'collapse navbar-collapse'},
-						R.ul {className: 'nav navbar-nav'},
-							for c in ['bluejam', 'thh', 'epiccyndaquil', 'mop', 'pwnna', 'crispy']
-								R.li {className: if channel == c then 'active' else ''}, R.a {href: '/c/' + c}, c
+			Navbar null
 			R.div {className: 'container'},
 				R.div {className: 'row'},
 					R.div {className: 'col-md-8'},
 						R.div {className: 'row', style: {marginBottom: '1.2em'}},
 							R.div {className: 'col-md-6'},
-								R.h1 {style: {margin: '0'}},
-									R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{channel}"
-									if @state.connected then " | #{count}" else ''
-								R.h3 {style: {margin: '0'}},
-									R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{window.location.host}/c/#{channel}"
+								Titleblock
+									connected:	@state.connected
+									count:		count
 							R.div {className: 'col-md-6', style: {marginTop: '0.5em'}},
 								Player
 									request:		request
