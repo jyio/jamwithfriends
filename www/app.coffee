@@ -158,6 +158,9 @@ Navbar = React.createClass
 					R.ul {className: 'nav navbar-nav'},
 						for c in ['bluejam', 'thh', 'epiccyndaquil', 'mop', 'pwnna', 'crispy']
 							R.li {className: if channel == c then 'active' else ''}, R.a {href: '/c/' + c}, c
+					R.div {className: 'nav navbar-nav pull-right', style: {width: '12em'}},
+						NickInput
+							nick: @props.nick
 
 Titleblock = React.createClass
 	render: ->
@@ -479,12 +482,7 @@ Messagelist = React.createClass
 				history:	@state.history
 	render: ->
 		R.div null,
-			R.div {className: 'row'},
-				R.div {className: 'col-md-6'},
-					R.h1 {style: {marginTop: '0'}}, 'Messages'
-				R.div {className: 'col-md-6'},
-					NickInput
-						nick:	@props.nick
+			R.h1 {style: {marginTop: '0'}}, 'Messages'
 			ChatInput null
 			R.div null,
 				for msg in @state.history
@@ -581,7 +579,8 @@ App = React.createClass
 		for k of @state.nickname
 			count++
 		R.div null,
-			Navbar null
+			Navbar
+				nick:	@state.nick
 			R.div {className: 'container'},
 				R.div {className: 'row'},
 					R.div {className: 'col-md-8'},

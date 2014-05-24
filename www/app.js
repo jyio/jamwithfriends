@@ -289,7 +289,14 @@ Navbar = React.createClass({
         }, c)));
       }
       return _results;
-    })()))));
+    })()), R.div({
+      className: 'nav navbar-nav pull-right',
+      style: {
+        width: '12em'
+      }
+    }, NickInput({
+      nick: this.props.nick
+    })))));
   }
 });
 
@@ -897,19 +904,11 @@ Messagelist = React.createClass({
   },
   render: function() {
     var msg;
-    return R.div(null, R.div({
-      className: 'row'
-    }, R.div({
-      className: 'col-md-6'
-    }, R.h1({
+    return R.div(null, R.h1({
       style: {
         marginTop: '0'
       }
-    }, 'Messages')), R.div({
-      className: 'col-md-6'
-    }, NickInput({
-      nick: this.props.nick
-    }))), ChatInput(null), R.div(null, (function() {
+    }, 'Messages'), ChatInput(null), R.div(null, (function() {
       var _i, _len, _ref, _results;
       _ref = this.state.history;
       _results = [];
@@ -1085,7 +1084,9 @@ App = React.createClass({
     for (k in this.state.nickname) {
       count++;
     }
-    return R.div(null, Navbar(null), R.div({
+    return R.div(null, Navbar({
+      nick: this.state.nick
+    }), R.div({
       className: 'container'
     }, R.div({
       className: 'row'
