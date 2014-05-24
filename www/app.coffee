@@ -122,6 +122,27 @@ randomid.crockford =
 	o:	'y'
 	u:	'z'
 
+NickInput = React.createClass
+	render: ->
+		R.div {className: 'input-group'},
+			R.i
+				className:	'input-group-addon glyphicon glyphicon-user'
+			R.input
+				type:		'text'
+				className:	'form-control'
+				onKeyUp:	(evt) =>
+					if evt.keyCode == 27	# esc
+						evt.target.value = ''
+					else if evt.keyCode == 13	# enter
+						val = trim evt.target.value
+						if val.length > 0
+							@sendNick val
+							evt.target.value = ''
+				placeholder:	@props.nick
+	sendNick: (msg) ->
+		sock.emit 'nick',
+			nick: msg
+
 Navbar = React.createClass
 	render: ->
 		R.div {className: 'navbar navbar-default navbar-fixed-top', role: 'navigation'},
@@ -394,6 +415,27 @@ Preset = React.createClass
 		@props.addFavorite 'youtube:vIM3tVCi0wg'
 		@props.addFavorite 'youtube:j5U8lXoW2EM'
 
+ChatInput = React.createClass
+	render: ->
+		R.div {className: 'input-group'},
+			R.i
+				className:	'input-group-addon glyphicon glyphicon-envelope'
+			R.input
+				type:		'text'
+				className:	'form-control'
+				onKeyUp:	(evt) =>
+					if evt.keyCode == 27	# esc
+						evt.target.value = ''
+					else if evt.keyCode == 13	# enter
+						val = trim evt.target.value
+						if val.length > 0
+							@sendChat val
+							evt.target.value = ''
+				placeholder:	'Send a message'
+	sendChat: (msg) ->
+		sock.emit 'chat',
+			body: msg
+
 MessagelistItem = React.createClass
 	getInitialState: ->
 		title:		@props.playing
@@ -441,36 +483,9 @@ Messagelist = React.createClass
 				R.div {className: 'col-md-6'},
 					R.h1 {style: {marginTop: '0'}}, 'Messages'
 				R.div {className: 'col-md-6'},
-					R.div {className: 'input-group'},
-						R.i
-							className:	'input-group-addon glyphicon glyphicon-user'
-						R.input
-							type:		'text'
-							className:	'form-control'
-							onKeyUp:	(evt) =>
-								if evt.keyCode == 27	# esc
-									evt.target.value = ''
-								else if evt.keyCode == 13	# enter
-									val = trim evt.target.value
-									if val.length > 0
-										@sendNick val
-										evt.target.value = ''
-							placeholder:	@props.nick
-			R.div {className: 'input-group'},
-				R.i
-					className:	'input-group-addon glyphicon glyphicon-envelope'
-				R.input
-					type:		'text'
-					className:	'form-control'
-					onKeyUp:	(evt) =>
-						if evt.keyCode == 27	# esc
-							evt.target.value = ''
-						else if evt.keyCode == 13	# enter
-							val = trim evt.target.value
-							if val.length > 0
-								@sendChat val
-								evt.target.value = ''
-					placeholder:	'Send a message'
+					NickInput
+						nick:	@props.nick
+			ChatInput null
 			R.div null,
 				for msg in @state.history
 					MessagelistItem
@@ -479,12 +494,6 @@ Messagelist = React.createClass
 						snick:	msg.snick
 						playing:	msg.playing
 						body:	msg.body
-	sendNick: (msg) ->
-		sock.emit 'nick',
-			nick: msg
-	sendChat: (msg) ->
-		sock.emit 'chat',
-			body: msg
 
 App = React.createClass
 	getInitialState: ->
