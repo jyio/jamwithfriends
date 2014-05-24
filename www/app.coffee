@@ -458,7 +458,7 @@ MessagelistItem = React.createClass
 				R.i
 					className:	'glyphicon glyphicon-headphones'
 				' '
-				@state.title
+				R.a {href: denormalize @props.playing, target: '_blank'}, @state.title
 		R.div {className: 'row', style: {borderBottom: '1px solid #777'}},
 			R.div {className: 'col-sm-2'},
 				R.img

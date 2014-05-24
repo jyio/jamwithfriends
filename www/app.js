@@ -840,7 +840,11 @@ MessagelistItem = React.createClass({
         className: 'label label-default'
       }, R.i({
         className: 'glyphicon glyphicon-headphones'
-      }), ' ', this.state.title));
+      }), ' ', R.a({
+        href: denormalize(this.props.playing, {
+          target: '_blank'
+        })
+      }, this.state.title)));
     }
     return R.div({
       className: 'row',
