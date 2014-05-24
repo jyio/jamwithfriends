@@ -197,7 +197,7 @@ class Channel(object):
 		self.sock = weakref.WeakSet()
 		self.participant = {}
 		self.nickname = {}
-		self.set_ended = set()
+		self.set_stopped = set()
 		self.quorum = 1
 		self.playloop = Playloop()
 		self.playing = None
@@ -210,7 +210,7 @@ class Channel(object):
 			if vidkey is not None:
 				data = fetchdata(vidkey)
 				if data is not None:
-					self.set_ended.clear()
+					self.set_stopped.clear()
 					self.playing = {
 						'vidkey':	data['vidkey'],
 						'url':		data['url'],
@@ -223,9 +223,9 @@ class Channel(object):
 			self.emit('queue', {'queue': list(self.playloop.queue)})
 	def stop(self, sock=None, vidkey=None):
 		if sock is not None and self.playing is not None and self.playing['vidkey'] == vidkey and sock.session['userhash'] in self.participant:
-			self.set_ended.add(sock.session['userhash'])
-		if len(self.set_ended) >= self.quorum:
-			print 'ENDED', len(self.set_ended)
+			self.set_stopped.add(sock.session['userhash'])
+		if len(self.set_stopped) >= self.quorum:
+			print 'STOPPED', len(self.set_stopped)
 			self.playing = None
 			self.request()
 	def rehash_quorum(self):
@@ -264,7 +264,7 @@ class Channel(object):
 			sock.session['channel'] = None
 			userhash = sock.session['userhash']
 			try:
-				self.set_ended.remove(userhash)
+				self.set_stopped.remove(userhash)
 			except KeyError:
 				pass
 			try:
