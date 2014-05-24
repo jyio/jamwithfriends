@@ -307,19 +307,13 @@ Titleblock = React.createClass({
         margin: '0'
       }
     }, R.a({
-      href: "/c/" + channel,
-      style: {
-        color: '#fff'
-      }
+      href: "/c/" + channel
     }, "" + channel), this.props.connected ? " | " + this.props.count : ''), R.h3({
       style: {
         margin: '0'
       }
     }, R.a({
-      href: "/c/" + channel,
-      style: {
-        color: '#fff'
-      }
+      href: "/c/" + channel
     }, "" + window.location.host + "/c/" + channel)));
   }
 });
@@ -385,11 +379,7 @@ PlayerHead = React.createClass({
       href: denormalize(this.props.vidkey, {
         target: '_blank'
       })
-    }, R.span({
-      style: {
-        color: '#fff'
-      }
-    }, this.state.title)));
+    }, this.state.title));
   }
 });
 

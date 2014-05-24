@@ -166,10 +166,10 @@ Titleblock = React.createClass
 	render: ->
 		R.div null,
 			R.h1 {style: {margin: '0'}},
-				R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{channel}"
+				R.a {href: "/c/#{channel}"}, "#{channel}"
 				if @props.connected then " | #{@props.count}" else ''
 			R.h3 {style: {margin: '0'}},
-				R.a {href: "/c/#{channel}", style: {color: '#fff'}}, "#{window.location.host}/c/#{channel}"
+				R.a {href: "/c/#{channel}"}, "#{window.location.host}/c/#{channel}"
 
 PlayerHead = React.createClass
 	getInitialState: ->
@@ -197,7 +197,7 @@ PlayerHead = React.createClass
 					className: 'glyphicon glyphicon-remove'
 			" #{@state.minutes}:#{lpad(@state.seconds, 2)} - "
 			R.a {href: denormalize @props.vidkey, target: '_blank'},
-				R.span {style: {color: '#fff'}}, @state.title
+				@state.title
 
 PlayerAudio = React.createClass
 	getInitialState: ->
