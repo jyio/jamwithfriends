@@ -959,6 +959,7 @@ Messagelist = React.createClass({
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         msg = _ref[_i];
         _results.push(MessagelistItem({
+          key: msg.src + msg.time + msg.body,
           time: msg.time,
           src: msg.src,
           snick: msg.snick,

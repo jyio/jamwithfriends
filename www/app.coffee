@@ -511,6 +511,7 @@ Messagelist = React.createClass
 			R.div null,
 				for msg in @state.history
 					MessagelistItem
+						key:	msg.src + msg.time + msg.body
 						time:	msg.time
 						src:	msg.src
 						snick:	msg.snick
