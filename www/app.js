@@ -596,14 +596,39 @@ Playlist = React.createClass({
     return {
       query: '',
       resultset: [],
-      queue: []
+      queue: [],
+      history: []
     };
   },
   componentDidMount: function() {
-    return sock.on('queue', (function(_this) {
+    sock.on('queue', (function(_this) {
       return function(msg) {
         return _this.setState({
           queue: msg.queue
+        });
+      };
+    })(this));
+    sock.on('history', (function(_this) {
+      return function(msg) {
+        return _this.setState({
+          history: msg.play
+        });
+      };
+    })(this));
+    return sock.on('played', (function(_this) {
+      return function(msg) {
+        var history, idx;
+        history = _this.state.history;
+        idx = history.indexOf(msg);
+        if (idx >= 0) {
+          history.splice(idx, 1);
+        }
+        history.unshift(msg);
+        while (history.length > 16) {
+          history.pop();
+        }
+        return _this.setState({
+          history: history
         });
       };
     })(this));
@@ -683,6 +708,31 @@ Playlist = React.createClass({
           request: this.props.request,
           vidkey: item[0],
           frequency: item[1],
+          addFavorite: this.props.addFavorite,
+          removeFavorite: this.props.removeFavorite
+        }));
+      }
+      return _results;
+    }).call(this))), R.h1({
+      style: {
+        display: (this.state.history.length > 0 ? 'block' : 'none')
+      }
+    }, 'History'), R.table({
+      className: 'table',
+      style: {
+        display: (this.state.history.length > 0 ? 'block' : 'none'),
+        fontSize: '1em'
+      }
+    }, R.tbody(null, (function() {
+      var _i, _len, _ref, _results;
+      _ref = this.state.history;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        item = _ref[_i];
+        _results.push(PlaylistItem({
+          key: item,
+          request: this.props.request,
+          vidkey: item,
           addFavorite: this.props.addFavorite,
           removeFavorite: this.props.removeFavorite
         }));
@@ -877,10 +927,10 @@ Messagelist = React.createClass({
     };
   },
   componentDidMount: function() {
-    sock.on('chathistory', (function(_this) {
+    sock.on('history', (function(_this) {
       return function(msg) {
         return _this.setState({
-          history: msg.history
+          history: msg.chat
         });
       };
     })(this));

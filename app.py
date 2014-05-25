@@ -5,6 +5,7 @@ import json
 import math
 import time
 import hashlib
+import sqlite3
 import weakref
 
 from collections import Counter, deque
@@ -145,6 +146,46 @@ def fetchdata_soundcloud(vidkey):
 		'format':	{},
 	}
 
+class DataStore(object):
+	def __init__(self, database=':memory:'):
+		self.db = db = sqlite3.connect(database)
+		db.row_factory = sqlite3.Row
+		with db:
+			db.execute('CREATE TABLE IF NOT EXISTS play (time REAL, dst TEXT, track TEXT)')
+			db.execute('CREATE INDEX IF NOT EXISTS idx_play ON play (dst, track, time)')
+			db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_play_unique ON play (dst, track)')
+			db.execute('CREATE TABLE IF NOT EXISTS chat (time REAL, dst TEXT, src TEXT, snick TEXT, playing TEXT, body TEXT)')
+			db.execute('CREATE INDEX IF NOT EXISTS idx_chat ON chat (dst, time)')
+	def store_play(self, dst, track):
+		with self.db as db:
+			db.execute('INSERT OR REPLACE INTO play (time, dst, track) values (?, ?, ?)', (
+				time.time(),
+				dst,
+				track
+			))
+	def recall_play(self, dst, limit=None):
+		if limit is None:
+			res = self.db.execute('SELECT * FROM play WHERE dst=? AND ?-time < 604800 ORDER BY time DESC', (dst, time.time()))
+		else:
+			res = self.db.execute('SELECT * FROM play WHERE dst=? AND ?-time < 604800 ORDER BY time DESC LIMIT ?', (dst, time.time(), limit))
+		return (r['track'] for r in res)
+	def store_chat(self, payload):
+		with self.db as db:
+			db.execute('INSERT INTO chat (time, dst, src, snick, playing, body) values (?, ?, ?, ?, ?, ?)', (
+				payload['time'],
+				payload['dst'],
+				payload['src'],
+				payload['snick'],
+				payload['playing'],
+				payload['body']
+			))
+	def recall_chat(self, dst, limit=None):
+		if limit is None:
+			res = self.db.execute('SELECT * FROM chat WHERE dst=? AND ?-time < 86400 ORDER BY time DESC', (dst, time.time()))
+		else:
+			res = self.db.execute('SELECT * FROM chat WHERE dst=? AND ?-time < 86400 ORDER BY time DESC LIMIT ?', (dst, time.time(), limit))
+		return (dict(r) for r in res)
+
 class Playloop(object):
 	def __init__(self):
 		self.req = {}
@@ -191,17 +232,17 @@ class Playloop(object):
 		return (k for k, v in self.req.iteritems() if value in v)
 
 class Channel(object):
-	def __init__(self, namespace, name):
+	def __init__(self, datastore, namespace, name):
+		self.datastore = datastore
 		self.namespace = namespace
 		self.name = name
 		self.sock = weakref.WeakSet()
 		self.participant = {}
 		self.nickname = {}
-		self.set_stopped = set()
+		self.set_stopped = {}
 		self.quorum = 1
 		self.playloop = Playloop()
 		self.playing = None
-		self.chathistory = deque(maxlen=16)
 	def request(self, sock=None, req=None):
 		if sock is not None and sock.session['userhash'] in self.participant:
 			if self.playloop.request(sock.session['userhash'], req):
@@ -222,11 +263,17 @@ class Channel(object):
 					}
 					self.emit('play', self.playing)
 			self.emit('queue', {'queue': list(self.playloop.queue)})
-	def stop(self, sock=None, vidkey=None):
+	def stop(self, sock=None, vidkey=None, reason=None):
 		if sock is not None and self.playing is not None and self.playing['vidkey'] == vidkey and sock.session['userhash'] in self.participant:
-			self.set_stopped.add(sock.session['userhash'])
+			self.set_stopped[sock.session['userhash']] = reason
 		if len(self.set_stopped) >= self.quorum:
 			print 'STOPPED', len(self.set_stopped)
+			if self.playing is not None:
+				for i in self.set_stopped.itervalues():
+					if i == 'end':
+						self.datastore.store_play(self.name, self.playing['vidkey'])
+						self.emit('played', self.playing['vidkey'])
+						break
 			self.playing = None
 			self.request()
 	def rehash_quorum(self):
@@ -258,7 +305,10 @@ class Channel(object):
 		self.emit('queue', {'queue': list(self.playloop.queue)})
 		if self.playing is not None:
 			self.emit_one(sock, 'play', self.playing)
-		self.emit_one(sock, 'chathistory', {'history': list(self.chathistory)})
+		self.emit_one(sock, 'history', {
+			'play':	list(self.datastore.recall_play(self.name, 16)),
+			'chat':	list(self.datastore.recall_chat(self.name, 16))
+		})
 		return sock
 	def part(self, sock):
 		try:
@@ -266,7 +316,7 @@ class Channel(object):
 			sock.session['channel'] = None
 			userhash = sock.session['userhash']
 			try:
-				self.set_stopped.remove(userhash)
+				del self.set_stopped[userhash]
 			except KeyError:
 				pass
 			try:
@@ -293,9 +343,9 @@ class Channel(object):
 	def chat(self, sock, body):
 		if sock is not None and sock.session['userhash'] in self.participant:
 			userhash = sock.session['userhash']
-			msg = {'time': time.time(), 'src': userhash, 'snick': self.nickname[userhash], 'playing': None if self.playing is None else self.playing['vidkey'], 'body': body}
-			self.chathistory.appendleft(msg)
+			msg = {'time': time.time(), 'dst': self.name, 'src': userhash, 'snick': self.nickname[userhash], 'playing': None if self.playing is None else self.playing['vidkey'], 'body': body}
 			self.emit('chat', msg)
+			self.datastore.store_chat(msg)
 	def emit(self, event, args):
 		pkt = {
 			'type':		'event',
@@ -314,13 +364,14 @@ class Channel(object):
 		})
 
 class SocketManager(BaseNamespace, BroadcastMixin, RoomsMixin):
+	datastore = DataStore('./data.sqlite')
 	channel = weakref.WeakValueDictionary()
 	def initialize(self):
 		self.session['channel'] = None
 	def channel_join(self, name):
 		channel = None
 		if name not in self.channel:
-			channel = self.channel[name] = Channel(self.ns_name, name)
+			channel = self.channel[name] = Channel(self.datastore, self.ns_name, name)
 			print self, channel
 		self.channel[name].join(self.socket)
 	def channel_part(self):
@@ -371,7 +422,7 @@ class SocketManager(BaseNamespace, BroadcastMixin, RoomsMixin):
 					return
 			except KeyError:
 				return
-			channel.stop(self.socket, msg['vidkey'])
+			channel.stop(self.socket, msg['vidkey'], msg['reason'])
 	def on_chat(self, msg):
 		if 'userhash' in self.session:
 			try:

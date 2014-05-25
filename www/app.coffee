@@ -322,12 +322,26 @@ PlaylistItem = React.createClass
 Playlist = React.createClass
 	getInitialState: ->
 		query:	''
-		resultset: []
+		resultset:	[]
 		queue:	[]
+		history:	[]
 	componentDidMount: ->
 		sock.on 'queue', (msg) =>
 			@setState
 				queue:	msg.queue
+		sock.on 'history', (msg) =>
+			@setState
+				history:	msg.play
+		sock.on 'played', (msg) =>
+			history = @state.history
+			idx = history.indexOf msg
+			if idx >= 0
+				history.splice idx, 1
+			history.unshift msg
+			while history.length > 16
+				history.pop()
+			@setState
+				history:	history
 	render: ->
 		R.div null,
 			R.div {className: 'input-group'},
@@ -369,6 +383,16 @@ Playlist = React.createClass
 							request:	@props.request
 							vidkey: 	item[0]
 							frequency:	item[1]
+							addFavorite:	@props.addFavorite
+							removeFavorite:	@props.removeFavorite
+			R.h1 {style: {display: (if @state.history.length > 0 then 'block' else 'none')}}, 'History'
+			R.table {className: 'table', style: {display: (if @state.history.length > 0 then 'block' else 'none'), fontSize: '1em'}},
+				R.tbody null,
+					for item in @state.history
+						PlaylistItem
+							key:		item
+							request:	@props.request
+							vidkey: 	item
 							addFavorite:	@props.addFavorite
 							removeFavorite:	@props.removeFavorite
 	search: (query) ->
@@ -471,9 +495,9 @@ Messagelist = React.createClass
 	getInitialState: ->
 		history:	[]
 	componentDidMount: ->
-		sock.on 'chathistory', (msg) =>
+		sock.on 'history', (msg) =>
 			@setState
-				history:	msg.history
+				history:	msg.chat
 		sock.on 'chat', (msg) =>
 			@state.history.unshift msg
 			while @state.history.length > 32
