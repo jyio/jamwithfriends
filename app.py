@@ -189,6 +189,7 @@ class DataStore(object):
 class Playloop(object):
 	def __init__(self):
 		self.req = {}
+		self.count = Counter()
 		self.done = set()
 		self.queue = ()
 	def __iter__(self):
@@ -202,12 +203,9 @@ class Playloop(object):
 				return vidkey
 		return None
 	def rehash(self):
-		c = Counter()
-		for v in self.req.itervalues():
-			c.update(v)
 		next = []
 		later = []
-		for i in c.most_common():
+		for i in self.count.most_common():
 			if i[0] in self.done:
 				later.append(i)
 			else:
@@ -216,18 +214,23 @@ class Playloop(object):
 			self.done.clear()
 		self.queue = tuple(next + later)
 	def request(self, key, value=None):
-		if value is None or len(value) < 1:
-			if key in self.req:
-				del self.req[key]
-				self.rehash()
-				return True
+		if value is not None:
+			value = set(value)
+		if key in self.req:
+			if self.req[key] != value:
+				self.count.subtract(self.req[key])
+			else:
+				return False
+		elif value is None:
 			return False
-		value = set(value)
-		if key not in self.req or self.req[key] != value:
+		if value is not None:
+			self.count.update(value)
 			self.req[key] = value
-			self.rehash()
-			return True
-		return False
+		else:
+			del self.req[key]
+		self.count += Counter()
+		self.rehash()
+		return True
 	def getkey(self, value):
 		return (k for k, v in self.req.iteritems() if value in v)
 
