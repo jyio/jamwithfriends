@@ -10,6 +10,11 @@ import weakref
 
 from collections import Counter, deque
 
+try:
+	import cPickle as pickle
+except ImportError:
+	import pickle
+
 import bottle
 from bottle import Bottle, static_file
 
@@ -151,11 +156,26 @@ class DataStore(object):
 		self.db = db = sqlite3.connect(database)
 		db.row_factory = sqlite3.Row
 		with db:
+			db.execute('CREATE TABLE IF NOT EXISTS queuestate (time REAL, dst TEXT, track TEXT, state BLOB)')
+			db.execute('CREATE INDEX IF NOT EXISTS idx_queuestate ON queuestate (dst, time)')
+			db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_queuestate_unique ON queuestate (dst)')
 			db.execute('CREATE TABLE IF NOT EXISTS play (time REAL, dst TEXT, track TEXT)')
 			db.execute('CREATE INDEX IF NOT EXISTS idx_play ON play (dst, track, time)')
 			db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_play_unique ON play (dst, track)')
 			db.execute('CREATE TABLE IF NOT EXISTS chat (time REAL, dst TEXT, src TEXT, snick TEXT, playing TEXT, body TEXT)')
 			db.execute('CREATE INDEX IF NOT EXISTS idx_chat ON chat (dst, time)')
+	def store_queuestate(self, dst, now, track, state):
+		with self.db as db:
+			db.execute('INSERT OR REPLACE INTO queuestate (time, dst, track, state) values (?, ?, ?, ?)', (
+				now,
+				dst,
+				track,
+				sqlite3.Binary(pickle.dumps(state, pickle.HIGHEST_PROTOCOL))
+			))
+	def recall_queuestate(self, dst):
+		r = self.db.cursor().execute('SELECT state FROM queuestate WHERE dst=? AND ?-time < 900 ORDER BY time DESC', (dst, time.time())).fetchone()
+		if r is not None:
+			return pickle.loads(str(r['state']))
 	def store_play(self, dst, track):
 		with self.db as db:
 			db.execute('INSERT OR REPLACE INTO play (time, dst, track) values (?, ?, ?)', (
@@ -192,16 +212,41 @@ class Playloop(object):
 		self.count = Counter()
 		self.done = set()
 		self.queue = ()
+		self.current = None
 	def __iter__(self):
 		return self
+	def store(self, datastore, dst):
+		state = {
+			'current':	self.current,
+			'done':		self.done
+		}
+		datastore.store_queuestate(dst, self.current['time'] if self.current is not None else time.time(), self.current['vidkey'] if self.current is not None else None, state)
+	def recall(self, datastore, dst):
+		state = datastore.recall_queuestate(dst)
+		if state is not None:
+			self.done = set(state['done'])
+			if state['current'] is not None:
+				self.current = dict(state['current'])
+			else:
+				self.current = None
 	def next(self):
 		for vidkey, freq in self.queue:
 			self.done.add(vidkey)
 			data = fetchdata(vidkey)
 			if data is not None:
 				self.rehash()
-				return vidkey
+				self.current = {
+					'vidkey':	data['vidkey'],
+					'url':		data['url'],
+					'title':	data['title'],
+					'format':	data['format'],
+					'requester':	list(self.getkey(vidkey)),
+					'time':		time.time(),
+				}
+				return self.current
 		return None
+	def reset(self):
+		self.current = None
 	def rehash(self):
 		next = []
 		later = []
@@ -245,38 +290,31 @@ class Channel(object):
 		self.set_stopped = {}
 		self.quorum = 1
 		self.playloop = Playloop()
-		self.playing = None
+		self.playloop.recall(self.datastore, self.name)
 	def request(self, sock=None, req=None):
+		current = self.playloop.current
 		if sock is not None and sock.session['userhash'] in self.participant:
 			if self.playloop.request(sock.session['userhash'], req):
 				self.emit('queue', {'queue': list(self.playloop.queue)})
-		if self.playing is None:
-			vidkey = self.playloop.next()
-			if vidkey is not None:
-				data = fetchdata(vidkey)
-				if data is not None:
-					self.set_stopped.clear()
-					self.playing = {
-						'vidkey':	data['vidkey'],
-						'url':		data['url'],
-						'title':	data['title'],
-						'format':	data['format'],
-						'requester':	list(self.playloop.getkey(vidkey)),
-						'time':		time.time(),
-					}
-					self.emit('play', self.playing)
+		if current is None:
+			current = self.playloop.next()
+			if current is not None:
+				self.set_stopped.clear()
+				self.playloop.store(self.datastore, self.name)
+				self.emit('play', current)
 			self.emit('queue', {'queue': list(self.playloop.queue)})
 	def stop(self, sock=None, vidkey=None, reason=None):
-		if sock is not None and self.playing is not None and self.playing['vidkey'] == vidkey and sock.session['userhash'] in self.participant:
+		current = self.playloop.current
+		if sock is not None and current is not None and current['vidkey'] == vidkey and sock.session['userhash'] in self.participant:
 			self.set_stopped[sock.session['userhash']] = reason
 		if len(self.set_stopped) >= self.quorum:
-			if self.playing is not None:
+			if self.playloop.current is not None:
 				for i in self.set_stopped.itervalues():
 					if i == 'end':
-						self.datastore.store_play(self.name, self.playing['vidkey'])
-						self.emit('played', self.playing['vidkey'])
+						self.datastore.store_play(self.name, current['vidkey'])
+						self.emit('played', current['vidkey'])
 						break
-			self.playing = None
+			self.playloop.reset()
 			self.request()
 	def rehash_quorum(self):
 		try:
@@ -304,8 +342,8 @@ class Channel(object):
 		sock.session['channel'] = self
 		self.emit_one(sock, 'nicks', self.nickname)
 		self.emit('queue', {'queue': list(self.playloop.queue)})
-		if self.playing is not None:
-			self.emit_one(sock, 'play', self.playing)
+		if self.playloop.current is not None:
+			self.emit_one(sock, 'play', self.playloop.current)
 		self.emit_one(sock, 'history', {
 			'play':	list(self.datastore.recall_play(self.name, 16)),
 			'chat':	list(self.datastore.recall_chat(self.name, 16))
@@ -344,7 +382,7 @@ class Channel(object):
 	def chat(self, sock, body):
 		if sock is not None and sock.session['userhash'] in self.participant:
 			userhash = sock.session['userhash']
-			msg = {'time': time.time(), 'dst': self.name, 'src': userhash, 'snick': self.nickname[userhash], 'playing': None if self.playing is None else self.playing['vidkey'], 'body': body}
+			msg = {'time': time.time(), 'dst': self.name, 'src': userhash, 'snick': self.nickname[userhash], 'playing': None if self.playloop.current is None else self.playloop.current['vidkey'], 'body': body}
 			self.emit('chat', msg)
 			self.datastore.store_chat(msg)
 	def emit(self, event, args):
