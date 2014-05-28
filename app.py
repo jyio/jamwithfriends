@@ -439,12 +439,6 @@ def appfactory():
 	def cb(channel=None):
 		return static_file('index.htm', root='./www')
 
-	@app.route('/now')
-	def cb():
-		return {
-			'now':	time.time()
-		}
-
 	@app.get('/socket.io/socket.io.js')
 	def cb():
 		return static_file('socket.io/socket.io.js', root='./www')
