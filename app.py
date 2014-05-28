@@ -270,7 +270,6 @@ class Channel(object):
 		if sock is not None and self.playing is not None and self.playing['vidkey'] == vidkey and sock.session['userhash'] in self.participant:
 			self.set_stopped[sock.session['userhash']] = reason
 		if len(self.set_stopped) >= self.quorum:
-			print 'STOPPED', len(self.set_stopped)
 			if self.playing is not None:
 				for i in self.set_stopped.itervalues():
 					if i == 'end':
@@ -284,7 +283,6 @@ class Channel(object):
 			self.quorum = int(max(1, math.ceil(math.log(len(self.participant)))))
 		except ValueError:
 			self.quorum = 1
-		print 'quorum', self.quorum
 	def join(self, sock):
 		if 'channel' in sock.session and sock.session['channel'] is not None:
 			sock.session['channel'].part(sock)
@@ -366,7 +364,7 @@ class Channel(object):
 			'endpoint':	self.namespace
 		})
 
-class SocketManager(BaseNamespace, BroadcastMixin, RoomsMixin):
+class SocketManager(BaseNamespace):
 	datastore = DataStore('./data.sqlite')
 	channel = weakref.WeakValueDictionary()
 	def initialize(self):
@@ -375,17 +373,13 @@ class SocketManager(BaseNamespace, BroadcastMixin, RoomsMixin):
 		channel = None
 		if name not in self.channel:
 			channel = self.channel[name] = Channel(self.datastore, self.ns_name, name)
-			print self, channel
 		self.channel[name].join(self.socket)
 	def channel_part(self):
 		try:
 			self.session['channel'].part(self.socket)
 		except (KeyError, AttributeError):
 			pass
-	def recv_connect(self):
-		print 'connect', self.socket.sessid
 	def recv_disconnect(self):
-		print 'disconnect', self.socket.sessid
 		self.channel_part()
 	def on_user(self, msg):
 		if 'userhash' not in self.session:
