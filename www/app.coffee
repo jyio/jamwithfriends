@@ -253,23 +253,22 @@ Player = React.createClass
 			fetchdata msg.vidkey
 				.done (data) =>
 					@setState
-						vidkey:	null
-					_.defer =>
-						@setState
-							vidkey:	data.vidkey
-							title:	data.title
-							format:	if 'format' of data then data.format else msg.format
-							time:	msg.time
+						vidkey:	data.vidkey
+						title:	data.title
+						format:	if 'format' of data then data.format else msg.format
+						time:	msg.time
 	render: ->
 		document.title = "#{channel} - jam with friends"
 		R.div null, if @state.vidkey then [
 			PlayerHead
+				key:	@state.vidkey + ':head'
 				vidkey:	@state.vidkey
 				skip:	@skip
 				request:		@props.request
 				addFavorite:	@props.addFavorite
 				removeFavorite:	@props.removeFavorite
 			PlayerAudio
+				key:	@state.vidkey + ':audio'
 				vidkey:	@state.vidkey
 				format:	@state.format
 				time:	@state.time

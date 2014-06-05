@@ -471,16 +471,11 @@ Player = React.createClass({
     return sock.on('play', (function(_this) {
       return function(msg) {
         return fetchdata(msg.vidkey).done(function(data) {
-          _this.setState({
-            vidkey: null
-          });
-          return _.defer(function() {
-            return _this.setState({
-              vidkey: data.vidkey,
-              title: data.title,
-              format: 'format' in data ? data.format : msg.format,
-              time: msg.time
-            });
+          return _this.setState({
+            vidkey: data.vidkey,
+            title: data.title,
+            format: 'format' in data ? data.format : msg.format,
+            time: msg.time
           });
         });
       };
@@ -490,12 +485,14 @@ Player = React.createClass({
     document.title = "" + channel + " - jam with friends";
     return R.div(null, this.state.vidkey ? [
       PlayerHead({
+        key: this.state.vidkey + ':head',
         vidkey: this.state.vidkey,
         skip: this.skip,
         request: this.props.request,
         addFavorite: this.props.addFavorite,
         removeFavorite: this.props.removeFavorite
       }), PlayerAudio({
+        key: this.state.vidkey + ':audio',
         vidkey: this.state.vidkey,
         format: this.state.format,
         time: this.state.time,
