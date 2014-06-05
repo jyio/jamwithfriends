@@ -221,7 +221,7 @@ PlayerAudio = React.createClass
 			node.volume = v.volume
 			node.addEventListener 'stalled', -> @load()
 			node.addEventListener 'ended', ->
-				@props.sock.emit 'stop',
+				self.props.sock.emit 'stop',
 					vidkey:	self.props.vidkey
 					reason:	'end'
 			node.addEventListener 'canplay', ->
@@ -232,7 +232,7 @@ PlayerAudio = React.createClass
 			node.addEventListener 'volumechange', -> self.props.setvolume @volume, @muted
 			errback = (evt) ->
 				if node.currentSrc == ''
-					@props.sock.emit 'stop',
+					self.props.sock.emit 'stop',
 						vidkey:	self.props.vidkey
 						reason:	'error'
 				else if node.networkState == 3

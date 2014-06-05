@@ -409,7 +409,7 @@ PlayerAudio = React.createClass({
         return this.load();
       });
       node.addEventListener('ended', function() {
-        return this.props.sock.emit('stop', {
+        return self.props.sock.emit('stop', {
           vidkey: self.props.vidkey,
           reason: 'end'
         });
@@ -427,7 +427,7 @@ PlayerAudio = React.createClass({
       });
       errback = function(evt) {
         if (node.currentSrc === '') {
-          return this.props.sock.emit('stop', {
+          return self.props.sock.emit('stop', {
             vidkey: self.props.vidkey,
             reason: 'error'
           });
