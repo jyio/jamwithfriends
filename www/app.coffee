@@ -10,10 +10,6 @@ if pathname.length == 3
 	if pathname[0] == '' and pathname[1] == 'c'
 		channel = pathname[2].toLowerCase()
 
-sock = null
-
-sock = io.connect('/channel')
-
 exttype =
 	mp3:	'audio/mpeg'
 	m4a:	'video/mp4'
@@ -151,7 +147,7 @@ NickInput = React.createClass
 							evt.target.value = ''
 				placeholder:	@props.nick
 	sendNick: (msg) ->
-		sock.emit 'nick',
+		@props.sock.emit 'nick',
 			nick: msg
 
 Navbar = React.createClass
@@ -171,7 +167,8 @@ Navbar = React.createClass
 							R.li {className: if channel == c then 'active' else ''}, R.a {href: '/c/' + c}, c
 					R.div {className: 'nav navbar-nav pull-right', style: {width: '12em'}},
 						NickInput
-							nick: @props.nick
+							nick:	@props.nick
+							sock:	@props.sock
 
 Titleblock = React.createClass
 	render: ->
@@ -224,7 +221,7 @@ PlayerAudio = React.createClass
 			node.volume = v.volume
 			node.addEventListener 'stalled', -> @load()
 			node.addEventListener 'ended', ->
-				sock.emit 'stop',
+				@props.sock.emit 'stop',
 					vidkey:	self.props.vidkey
 					reason:	'end'
 			node.addEventListener 'canplay', ->
@@ -235,7 +232,7 @@ PlayerAudio = React.createClass
 			node.addEventListener 'volumechange', -> self.props.setvolume @volume, @muted
 			errback = (evt) ->
 				if node.currentSrc == ''
-					sock.emit 'stop',
+					@props.sock.emit 'stop',
 						vidkey:	self.props.vidkey
 						reason:	'error'
 				else if node.networkState == 3
@@ -261,7 +258,7 @@ Player = React.createClass
 		muted:	false
 		volume:	1
 	componentDidMount: ->
-		sock.on 'play', (msg) =>
+		@props.sock.on 'play', (msg) =>
 			fetchdata msg.vidkey
 				.done (data) =>
 					@setState
@@ -286,6 +283,7 @@ Player = React.createClass
 				time:	@state.time
 				getvolume:	@getvolume
 				setvolume:	@setvolume
+				sock:	@props.sock
 		] else []
 	getvolume: ->
 		volume:	@state.volume
@@ -299,7 +297,7 @@ Player = React.createClass
 		if vidkey
 			@setState
 				vidkey:	null
-			sock.emit 'stop',
+			@props.sock.emit 'stop',
 				vidkey:	vidkey
 				reason:	'skip'
 
@@ -337,13 +335,13 @@ Playlist = React.createClass
 		queue:	[]
 		history:	[]
 	componentDidMount: ->
-		sock.on 'queue', (msg) =>
+		@props.sock.on 'queue', (msg) =>
 			@setState
 				queue:	msg.queue
-		sock.on 'history', (msg) =>
+		@props.sock.on 'history', (msg) =>
 			@setState
 				history:	msg.play
-		sock.on 'played', (msg) =>
+		@props.sock.on 'played', (msg) =>
 			history = @state.history
 			idx = history.indexOf msg
 			if idx >= 0
@@ -478,7 +476,7 @@ ChatInput = React.createClass
 	sendChat: ->
 		val = trim @state.body
 		if val.length > 0
-			sock.emit 'chat',
+			@props.sock.emit 'chat',
 				body: val
 			@setState
 				body: ''
@@ -515,7 +513,7 @@ Messagelist = React.createClass
 	getInitialState: ->
 		history:	[]
 	componentDidMount: ->
-		sock.on 'history', (msg) =>
+		@props.sock.on 'history', (msg) =>
 			$chatinput = $(@getDOMNode()).find('.chatinput')
 			tailchat = isInViewport $chatinput
 			msg.chat.reverse()
@@ -523,7 +521,7 @@ Messagelist = React.createClass
 				history:	msg.chat
 			if tailchat
 				$chatinput[0].scrollIntoView()
-		sock.on 'chat', (msg) =>
+		@props.sock.on 'chat', (msg) =>
 			$chatinput = $(@getDOMNode()).find('.chatinput')
 			tailchat = isInViewport $chatinput
 			@state.history.push msg
@@ -545,11 +543,13 @@ Messagelist = React.createClass
 						snick:	msg.snick
 						playing:	msg.playing
 						body:	msg.body
-			ChatInput null
+			ChatInput
+				sock:	@props.sock
 
 App = React.createClass
 	getInitialState: ->
 		r =
+			sock:	null
 			id:		''
 			cid:		randomid()
 			nick:		'User'
@@ -568,8 +568,8 @@ App = React.createClass
 	persist: ->
 		$.cookie 'jam.' + @props.channel, {v: 1, cid: @state.cid, nick: @state.nick, f: @state.favorite}, {expires: 14}
 	sendRequest: ->
-		sock.emit 'tdelta', time.time()
-		sock.emit 'request', @state.favorite
+		@state.sock.emit 'tdelta', time.time()
+		@state.sock.emit 'request', @state.favorite
 	addFavorite: (vidkey, propagate=true) ->
 		idx = @state.favorite.indexOf vidkey
 		if idx < 0
@@ -588,10 +588,10 @@ App = React.createClass
 			if propagate
 				@sendRequest()
 			@persist()
-	componentDidMount: ->
-		@persist()
-		@sendRequest()
+	setupSock: ->
+		sock = io.connect('/channel')
 		sock.on 'connect', =>
+			@persist()
 			@setState
 				connected:	true
 			sock.emit 'user',
@@ -627,6 +627,10 @@ App = React.createClass
 				@setState
 					nick:	msg.nick
 				@persist()
+		@setState
+			sock:	sock
+	componentDidMount: ->
+		@setupSock()
 		$.getJSON '/a/recentchannels', (data) =>
 			@setState
 				channels:	data.channels
@@ -640,6 +644,7 @@ App = React.createClass
 			Navbar
 				nick:	@state.nick
 				channels:	@state.channels
+				sock:	@state.sock
 			R.div {className: 'container'},
 				R.div {className: 'row'},
 					R.div {id: 'left', className: 'col-md-8'},
@@ -653,12 +658,14 @@ App = React.createClass
 									request:		request
 									addFavorite:	@addFavorite
 									removeFavorite:	@removeFavorite
+									sock:			@state.sock
 						R.div {className: 'row'},
 							R.div {className: 'col-md-12'},
 								Playlist
 									request:		request
 									addFavorite:	@addFavorite
 									removeFavorite:	@removeFavorite
+									sock:			@state.sock
 						R.div {className: 'row'},
 							R.div {className: 'col-md-12'},
 								Preset
@@ -666,5 +673,6 @@ App = React.createClass
 					R.div {id: 'right', className: 'col-md-4'},
 						Messagelist
 							nick:		@state.nick
+							sock:		@state.sock
 
 React.renderComponent App({channel: channel}), document.getElementById 'app'
