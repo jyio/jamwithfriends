@@ -287,7 +287,7 @@ Navbar = React.createClass({
       className: 'nav navbar-nav'
     }, (function() {
       var _i, _len, _ref, _results;
-      _ref = ['bluejam', 'thh', 'epiccyndaquil', 'mop', 'pwnna', 'crispy'];
+      _ref = this.props.channels;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         c = _ref[_i];
@@ -298,7 +298,7 @@ Navbar = React.createClass({
         }, c)));
       }
       return _results;
-    })()), R.div({
+    }).call(this)), R.div({
       className: 'nav navbar-nav pull-right',
       style: {
         width: '12em'
@@ -1025,7 +1025,8 @@ App = React.createClass({
       nick: 'User',
       connected: false,
       favorite: [],
-      nickname: {}
+      nickname: {},
+      channels: []
     };
     jam = $.cookie('jam.' + this.props.channel);
     if (jam && jam.v >= 1) {
@@ -1146,7 +1147,7 @@ App = React.createClass({
         });
       };
     })(this));
-    return sock.on('nick', (function(_this) {
+    sock.on('nick', (function(_this) {
       return function(msg) {
         _this.state.nickname[msg.id] = msg.nick;
         _this.setState({
@@ -1158,6 +1159,13 @@ App = React.createClass({
           });
           return _this.persist();
         }
+      };
+    })(this));
+    return $.getJSON('/a/recentchannels', (function(_this) {
+      return function(data) {
+        return _this.setState({
+          channels: data.channels
+        });
       };
     })(this));
   },
@@ -1174,7 +1182,8 @@ App = React.createClass({
       count++;
     }
     return R.div(null, Navbar({
-      nick: this.state.nick
+      nick: this.state.nick,
+      channels: this.state.channels
     }), R.div({
       className: 'container'
     }, R.div({

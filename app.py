@@ -205,6 +205,12 @@ class DataStore(object):
 		else:
 			res = self.db.execute('SELECT * FROM chat WHERE dst=? AND ?-time < 86400 ORDER BY time DESC LIMIT ?', (dst, time.time(), limit))
 		return (dict(r) for r in res)
+	def recall_channel(self, limit=None):
+		if limit is None:
+			res = self.db.execute('SELECT DISTINCT dst FROM play WHERE ?-time < 604800 ORDER BY time DESC', (time.time(),))
+		else:
+			res = self.db.execute('SELECT DISTINCT dst FROM play WHERE ?-time < 604800 ORDER BY time DESC LIMIT ?', (time.time(), limit))
+		return (r['dst'] for r in res)
 
 class Playloop(object):
 	def __init__(self):
@@ -480,6 +486,12 @@ def appfactory():
 	@app.get('/socket.io/socket.io.js')
 	def cb():
 		return static_file('socket.io/socket.io.js', root='./www')
+
+	@app.route('/a/recentchannels')
+	def cb():
+		return {
+			'channels':	list(SocketManager.datastore.recall_channel(8))
+		}
 
 	@app.get('/socket.io')
 	@app.get('/socket.io/')

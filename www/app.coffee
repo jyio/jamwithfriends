@@ -167,7 +167,7 @@ Navbar = React.createClass
 					R.a {className: 'navbar-brand', href: '#'}, 'jam with friends'
 				R.div {className: 'collapse navbar-collapse'},
 					R.ul {className: 'nav navbar-nav'},
-						for c in ['bluejam', 'thh', 'epiccyndaquil', 'mop', 'pwnna', 'crispy']
+						for c in @props.channels
 							R.li {className: if channel == c then 'active' else ''}, R.a {href: '/c/' + c}, c
 					R.div {className: 'nav navbar-nav pull-right', style: {width: '12em'}},
 						NickInput
@@ -556,6 +556,7 @@ App = React.createClass
 			connected:	false
 			favorite:	[]
 			nickname:	{}
+			channels:	[]
 		jam = $.cookie 'jam.' + @props.channel
 		if jam and jam.v >= 1
 			r.favorite = jam.f
@@ -626,6 +627,9 @@ App = React.createClass
 				@setState
 					nick:	msg.nick
 				@persist()
+		$.getJSON '/a/recentchannels', (data) =>
+			@setState
+				channels:	data.channels
 	render: ->
 		request = {}
 		request[i] = true for i in @state.favorite
@@ -635,6 +639,7 @@ App = React.createClass
 		R.div null,
 			Navbar
 				nick:	@state.nick
+				channels:	@state.channels
 			R.div {className: 'container'},
 				R.div {className: 'row'},
 					R.div {id: 'left', className: 'col-md-8'},
