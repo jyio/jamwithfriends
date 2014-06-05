@@ -1027,11 +1027,15 @@ App = React.createClass({
       connected: false,
       favorite: [],
       nickname: {},
-      channels: []
+      channels: [],
+      lastpersist: 0
     };
     jam = $.cookie('jam.' + this.props.channel);
     if (jam && jam.v >= 1) {
       r.favorite = jam.f;
+      if (jam.t) {
+        r.lastpersist = jam.t;
+      }
       if (jam.cid) {
         r.cid = jam.cid;
       }
@@ -1044,6 +1048,7 @@ App = React.createClass({
   persist: function() {
     return $.cookie('jam.' + this.props.channel, {
       v: 1,
+      t: time.time(),
       cid: this.state.cid,
       nick: this.state.nick,
       f: this.state.favorite
@@ -1163,12 +1168,19 @@ App = React.createClass({
         }
       };
     })(this));
+    sock.on('play', (function(_this) {
+      return function() {
+        return _this.persist();
+      };
+    })(this));
     return this.setState({
       sock: sock
     });
   },
   componentDidMount: function() {
-    this.setupSock();
+    if (time.time() - this.state.lastpersist < 900) {
+      this.setupSock();
+    }
     return $.getJSON('/a/recentchannels', (function(_this) {
       return function(data) {
         return _this.setState({
@@ -1193,7 +1205,7 @@ App = React.createClass({
       nick: this.state.nick,
       channels: this.state.channels,
       sock: this.state.sock
-    }), R.div({
+    }), this.state.sock ? R.div({
       className: 'container'
     }, R.div({
       className: 'row'
@@ -1241,7 +1253,56 @@ App = React.createClass({
     }, Messagelist({
       nick: this.state.nick,
       sock: this.state.sock
-    })))));
+    })))) : R.div({
+      className: 'container'
+    }, R.h2({
+      style: {
+        textAlign: 'center'
+      }
+    }, R.button({
+      className: 'btn btn-success',
+      onClick: this.setupSock
+    }, R.span({
+      style: {
+        fontSize: '3em'
+      }
+    }, "" + window.location.host + "/c/" + channel), R.br(null), R.span({
+      style: {
+        fontSize: '2em'
+      }
+    }, 'click to synchronize music with friends'))), R.h2({
+      style: {
+        textAlign: 'center'
+      }
+    }, 'what is this?'), R.ul({
+      style: {
+        width: '50%',
+        margin: '0 auto',
+        fontSize: '1.25em'
+      }
+    }, R.li(null, R.i({
+      className: 'glyphicon glyphicon-refresh'
+    }), ' Synchronize online music with friends!'), R.li(null, R.i({
+      className: 'glyphicon glyphicon-heart'
+    }), ' Request tracks from YouTube and SoundCloud'), R.li(null, R.i({
+      className: 'glyphicon glyphicon-remove'
+    }), ' Vote to skip tracks'), R.li(null, R.i({
+      className: 'glyphicon glyphicon-star'
+    }), ' Popular tracks play first')), R.h2({
+      style: {
+        textAlign: 'center'
+      }
+    }, 'works best with'), R.div({
+      style: {
+        textAlign: 'center'
+      }
+    }, R.img({
+      src: '//raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_128x128.png'
+    }), R.img({
+      src: '//raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_128x128.png'
+    }), R.img({
+      src: '//raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_128x128.png'
+    }))));
   }
 });
 

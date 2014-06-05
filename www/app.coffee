@@ -557,16 +557,19 @@ App = React.createClass
 			favorite:	[]
 			nickname:	{}
 			channels:	[]
+			lastpersist:	0
 		jam = $.cookie 'jam.' + @props.channel
 		if jam and jam.v >= 1
 			r.favorite = jam.f
+			if jam.t
+				r.lastpersist = jam.t
 			if jam.cid
 				r.cid = jam.cid
 			if jam.nick
 				r.nick = jam.nick
 		r
 	persist: ->
-		$.cookie 'jam.' + @props.channel, {v: 1, cid: @state.cid, nick: @state.nick, f: @state.favorite}, {expires: 14}
+		$.cookie 'jam.' + @props.channel, {v: 1, t: time.time(), cid: @state.cid, nick: @state.nick, f: @state.favorite}, {expires: 14}
 	sendRequest: ->
 		@state.sock.emit 'tdelta', time.time()
 		@state.sock.emit 'request', @state.favorite
@@ -627,10 +630,13 @@ App = React.createClass
 				@setState
 					nick:	msg.nick
 				@persist()
+		sock.on 'play', =>
+			@persist()
 		@setState
 			sock:	sock
 	componentDidMount: ->
-		@setupSock()
+		if time.time() - @state.lastpersist < 900
+			@setupSock()
 		$.getJSON '/a/recentchannels', (data) =>
 			@setState
 				channels:	data.channels
@@ -645,34 +651,64 @@ App = React.createClass
 				nick:	@state.nick
 				channels:	@state.channels
 				sock:	@state.sock
-			R.div {className: 'container'},
-				R.div {className: 'row'},
-					R.div {id: 'left', className: 'col-md-8'},
-						R.div {className: 'row', style: {marginBottom: '1.2em'}},
-							R.div {className: 'col-md-6'},
-								Titleblock
-									connected:	@state.connected
-									count:		count
-							R.div {className: 'col-md-6', style: {marginTop: '0.5em'}},
-								Player
-									request:		request
-									addFavorite:	@addFavorite
-									removeFavorite:	@removeFavorite
-									sock:			@state.sock
-						R.div {className: 'row'},
-							R.div {className: 'col-md-12'},
-								Playlist
-									request:		request
-									addFavorite:	@addFavorite
-									removeFavorite:	@removeFavorite
-									sock:			@state.sock
-						R.div {className: 'row'},
-							R.div {className: 'col-md-12'},
-								Preset
-									addFavorite:	@addFavorite
-					R.div {id: 'right', className: 'col-md-4'},
-						Messagelist
-							nick:		@state.nick
-							sock:		@state.sock
+			if @state.sock
+				R.div {className: 'container'},
+					R.div {className: 'row'},
+						R.div {id: 'left', className: 'col-md-8'},
+							R.div {className: 'row', style: {marginBottom: '1.2em'}},
+								R.div {className: 'col-md-6'},
+									Titleblock
+										connected:	@state.connected
+										count:		count
+								R.div {className: 'col-md-6', style: {marginTop: '0.5em'}},
+									Player
+										request:		request
+										addFavorite:	@addFavorite
+										removeFavorite:	@removeFavorite
+										sock:			@state.sock
+							R.div {className: 'row'},
+								R.div {className: 'col-md-12'},
+									Playlist
+										request:		request
+										addFavorite:	@addFavorite
+										removeFavorite:	@removeFavorite
+										sock:			@state.sock
+							R.div {className: 'row'},
+								R.div {className: 'col-md-12'},
+									Preset
+										addFavorite:	@addFavorite
+						R.div {id: 'right', className: 'col-md-4'},
+							Messagelist
+								nick:		@state.nick
+								sock:		@state.sock
+			else
+				R.div {className: 'container'},
+					R.h2 {style: {textAlign: 'center'}},
+						R.button {className: 'btn btn-success', onClick: @setupSock},
+							R.span {style: {fontSize: '3em'}}, "#{window.location.host}/c/#{channel}"
+							R.br null
+							R.span {style: {fontSize: '2em'}}, 'click to synchronize music with friends'
+					R.h2 {style: {textAlign: 'center'}}, 'what is this?'
+					R.ul {style: {width: '50%', margin: '0 auto', fontSize: '1.25em'}},
+						R.li null,
+							R.i {className: 'glyphicon glyphicon-refresh'}
+							' Synchronize online music with friends!'
+						R.li null,
+							R.i {className: 'glyphicon glyphicon-heart'}
+							' Request tracks from YouTube and SoundCloud'
+						R.li null,
+							R.i {className: 'glyphicon glyphicon-remove'}
+							' Vote to skip tracks'
+						R.li null,
+							R.i {className: 'glyphicon glyphicon-star'}
+							' Popular tracks play first'
+					R.h2 {style: {textAlign: 'center'}}, 'works best with'
+					R.div {style: {textAlign: 'center'}},
+						R.img
+							src: '//raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_128x128.png'
+						R.img
+							src: '//raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_128x128.png'
+						R.img
+							src: '//raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_128x128.png'
 
 React.renderComponent App({channel: channel}), document.getElementById 'app'
