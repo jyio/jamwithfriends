@@ -212,12 +212,11 @@ PlayerAudio = React.createClass
 			node.muted = v.muted
 			node.volume = v.volume
 			node.addEventListener 'stalled', -> @load()
+			node.addEventListener 'ended', ->
+				sock.emit 'stop',
+					vidkey:	self.props.vidkey
+					reason:	'end'
 			node.addEventListener 'canplay', ->
-				@removeEventListener 'canplay', arguments.callee
-				@addEventListener 'ended', ->
-					sock.emit 'stop',
-						vidkey:	self.props.vidkey
-						reason:	'end'
 				@currentTime = time.synctime() - self.props.time
 				@play()
 			node.addEventListener 'volumechange', -> self.props.setvolume @volume, @muted

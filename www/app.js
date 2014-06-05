@@ -402,14 +402,13 @@ PlayerAudio = React.createClass({
       node.addEventListener('stalled', function() {
         return this.load();
       });
-      node.addEventListener('canplay', function() {
-        this.removeEventListener('canplay', arguments.callee);
-        this.addEventListener('ended', function() {
-          return sock.emit('stop', {
-            vidkey: self.props.vidkey,
-            reason: 'end'
-          });
+      node.addEventListener('ended', function() {
+        return sock.emit('stop', {
+          vidkey: self.props.vidkey,
+          reason: 'end'
         });
+      });
+      node.addEventListener('canplay', function() {
         this.currentTime = time.synctime() - self.props.time;
         return this.play();
       });
