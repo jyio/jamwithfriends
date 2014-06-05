@@ -454,25 +454,34 @@ Preset = React.createClass
 		@props.addFavorite 'youtube:j5U8lXoW2EM'
 
 ChatInput = React.createClass
+	getInitialState: ->
+		body:	''
 	render: ->
 		R.div {className: 'chatinput input-group'},
-			R.i
-				className:	'input-group-addon glyphicon glyphicon-envelope'
 			R.input
 				type:		'text'
 				className:	'form-control'
+				onChange:	(evt) => @setState
+					body:	evt.target.value
 				onKeyUp:	(evt) =>
 					if evt.keyCode == 27	# esc
-						evt.target.value = ''
+						@setState
+							body:	''
 					else if evt.keyCode == 13	# enter
-						val = trim evt.target.value
-						if val.length > 0
-							@sendChat val
-							evt.target.value = ''
+						@sendChat()
+				value:		@state.body
 				placeholder:	'Send a message'
-	sendChat: (msg) ->
-		sock.emit 'chat',
-			body: msg
+			R.div {className: 'input-group-btn'},
+				R.button {className: 'btn btn-default', onClick: @sendChat},
+					R.i
+						className:	'glyphicon glyphicon-envelope'
+	sendChat: ->
+		val = trim @state.body
+		if val.length > 0
+			sock.emit 'chat',
+				body: val
+			@setState
+				body: ''
 
 MessagelistItem = React.createClass
 	getInitialState: ->

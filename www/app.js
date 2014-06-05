@@ -838,35 +838,57 @@ Preset = React.createClass({
 });
 
 ChatInput = React.createClass({
+  getInitialState: function() {
+    return {
+      body: ''
+    };
+  },
   render: function() {
     return R.div({
       className: 'chatinput input-group'
-    }, R.i({
-      className: 'input-group-addon glyphicon glyphicon-envelope'
-    }), R.input({
+    }, R.input({
       type: 'text',
       className: 'form-control',
+      onChange: (function(_this) {
+        return function(evt) {
+          return _this.setState({
+            body: evt.target.value
+          });
+        };
+      })(this),
       onKeyUp: (function(_this) {
         return function(evt) {
-          var val;
           if (evt.keyCode === 27) {
-            return evt.target.value = '';
+            return _this.setState({
+              body: ''
+            });
           } else if (evt.keyCode === 13) {
-            val = trim(evt.target.value);
-            if (val.length > 0) {
-              _this.sendChat(val);
-              return evt.target.value = '';
-            }
+            return _this.sendChat();
           }
         };
       })(this),
+      value: this.state.body,
       placeholder: 'Send a message'
-    }));
+    }), R.div({
+      className: 'input-group-btn'
+    }, R.button({
+      className: 'btn btn-default',
+      onClick: this.sendChat
+    }, R.i({
+      className: 'glyphicon glyphicon-envelope'
+    }))));
   },
-  sendChat: function(msg) {
-    return sock.emit('chat', {
-      body: msg
-    });
+  sendChat: function() {
+    var val;
+    val = trim(this.state.body);
+    if (val.length > 0) {
+      sock.emit('chat', {
+        body: val
+      });
+      return this.setState({
+        body: ''
+      });
+    }
   }
 });
 
