@@ -409,7 +409,11 @@ PlayerAudio = React.createClass({
         });
       });
       node.addEventListener('canplay', function() {
-        this.currentTime = time.synctime() - self.props.time;
+        var seek;
+        seek = time.synctime() - self.props.time;
+        if (Math.abs(this.currentTime - seek) > 1) {
+          this.currentTime = seek;
+        }
         return this.play();
       });
       node.addEventListener('volumechange', function() {
