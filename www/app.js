@@ -941,6 +941,7 @@ Messagelist = React.createClass({
         var $chatinput, tailchat;
         $chatinput = $(_this.getDOMNode()).find('.chatinput');
         tailchat = isInViewport($chatinput);
+        msg.chat.reverse();
         _this.setState({
           history: msg.chat
         });

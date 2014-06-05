@@ -509,6 +509,7 @@ Messagelist = React.createClass
 		sock.on 'history', (msg) =>
 			$chatinput = $(@getDOMNode()).find('.chatinput')
 			tailchat = isInViewport $chatinput
+			msg.chat.reverse()
 			@setState
 				history:	msg.chat
 			if tailchat

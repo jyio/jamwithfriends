@@ -201,9 +201,9 @@ class DataStore(object):
 			))
 	def recall_chat(self, dst, limit=None):
 		if limit is None:
-			res = self.db.execute('SELECT * FROM chat WHERE dst=? AND ?-time < 86400 ORDER BY time', (dst, time.time()))
+			res = self.db.execute('SELECT * FROM chat WHERE dst=? AND ?-time < 86400 ORDER BY time DESC', (dst, time.time()))
 		else:
-			res = self.db.execute('SELECT * FROM chat WHERE dst=? AND ?-time < 86400 ORDER BY time LIMIT ?', (dst, time.time(), limit))
+			res = self.db.execute('SELECT * FROM chat WHERE dst=? AND ?-time < 86400 ORDER BY time DESC LIMIT ?', (dst, time.time(), limit))
 		return (dict(r) for r in res)
 
 class Playloop(object):
