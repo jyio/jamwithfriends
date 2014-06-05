@@ -30,6 +30,23 @@
 		<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
 		<![endif]-->
 		<style type="text/css">
+			@media (min-width: 768px) {
+				#left, #right {
+					position: absolute;
+					top: 0;
+					bottom: 0;
+					padding-top: 50px;
+					overflow-y: auto;
+				}
+				#left {
+					left: 0;
+					padding-left: 80px;
+				}
+				#right {
+					right: 0;
+					padding-right: 80px;
+				}
+			}
 			body {
 				padding-top: 50px;
 			}

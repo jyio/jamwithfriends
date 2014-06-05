@@ -122,6 +122,17 @@ randomid.crockford =
 	o:	'y'
 	u:	'z'
 
+isInViewport = (el) ->
+	if el instanceof jQuery
+		el = el[0]
+	rect = el.getBoundingClientRect()
+	(
+		(rect.top >= 0) and
+		(rect.left >= 0) and
+		(rect.bottom <= (window.innerHeight or document.documentElement.clientHeight)) and
+		(rect.right <= (window.innerWidth or document.documentElement.clientWidth))
+	)
+
 NickInput = React.createClass
 	render: ->
 		R.div {className: 'input-group'},
@@ -444,7 +455,7 @@ Preset = React.createClass
 
 ChatInput = React.createClass
 	render: ->
-		R.div {className: 'input-group'},
+		R.div {className: 'chatinput input-group'},
 			R.i
 				className:	'input-group-addon glyphicon glyphicon-envelope'
 			R.input
@@ -496,18 +507,25 @@ Messagelist = React.createClass
 		history:	[]
 	componentDidMount: ->
 		sock.on 'history', (msg) =>
+			$chatinput = $(@getDOMNode()).find('.chatinput')
+			tailchat = isInViewport $chatinput
 			@setState
 				history:	msg.chat
+			if tailchat
+				$chatinput[0].scrollIntoView()
 		sock.on 'chat', (msg) =>
-			@state.history.unshift msg
+			$chatinput = $(@getDOMNode()).find('.chatinput')
+			tailchat = isInViewport $chatinput
+			@state.history.push msg
 			while @state.history.length > 32
-				@state.history.pop()
+				@state.history.shift()
 			@setState
 				history:	@state.history
+			if tailchat
+				$chatinput[0].scrollIntoView()
 	render: ->
 		R.div null,
 			R.h1 {style: {marginTop: '0'}}, 'Messages'
-			ChatInput null
 			R.div null,
 				for msg in @state.history
 					MessagelistItem
@@ -517,6 +535,7 @@ Messagelist = React.createClass
 						snick:	msg.snick
 						playing:	msg.playing
 						body:	msg.body
+			ChatInput null
 
 App = React.createClass
 	getInitialState: ->
@@ -608,7 +627,7 @@ App = React.createClass
 				nick:	@state.nick
 			R.div {className: 'container'},
 				R.div {className: 'row'},
-					R.div {className: 'col-md-8'},
+					R.div {id: 'left', className: 'col-md-8'},
 						R.div {className: 'row', style: {marginBottom: '1.2em'}},
 							R.div {className: 'col-md-6'},
 								Titleblock
@@ -629,7 +648,7 @@ App = React.createClass
 							R.div {className: 'col-md-12'},
 								Preset
 									addFavorite:	@addFavorite
-					R.div {className: 'col-md-4'},
+					R.div {id: 'right', className: 'col-md-4'},
 						Messagelist
 							nick:		@state.nick
 
