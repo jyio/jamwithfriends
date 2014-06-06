@@ -221,7 +221,9 @@ class DataStore(object):
 		return (r['dst'] for r in res)
 
 class Playloop(object):
-	def __init__(self):
+	def __init__(self, datastore, name):
+		self.datastore = datastore
+		self.name = name
 		self.req = {}
 		self.count = Counter()
 		self.done = set()
@@ -230,14 +232,14 @@ class Playloop(object):
 		self.current = None
 	def __iter__(self):
 		return self
-	def store(self, datastore, dst):
+	def store(self):
 		state = {
 			'current':	self.current,
 			'done':		self.done
 		}
-		datastore.store_queuestate(dst, self.current['time'] if self.current is not None else time.time(), self.current['vidkey'] if self.current is not None else None, state)
-	def recall(self, datastore, dst):
-		state = datastore.recall_queuestate(dst)
+		self.datastore.store_queuestate(self.name, self.current['time'] if self.current is not None else time.time(), self.current['vidkey'] if self.current is not None else None, state)
+	def recall(self):
+		state = self.datastore.recall_queuestate(self.name)
 		if state is not None:
 			self.done = set(state['done'])
 			if state['current'] is not None:
@@ -311,8 +313,8 @@ class Channel(object):
 		self.nickname = {}
 		self.set_stopped = {}
 		self.quorum = 1
-		self.playloop = Playloop()
-		self.playloop.recall(self.datastore, self.name)
+		self.playloop = Playloop(self.datastore, self.name)
+		self.playloop.recall()
 	def request(self, sock=None, req=None):
 		current = self.playloop.current
 		if sock is not None and sock.session['userhash'] in self.participant:
@@ -322,7 +324,7 @@ class Channel(object):
 			current = self.playloop.next()
 			if current is not None:
 				self.set_stopped.clear()
-				self.playloop.store(self.datastore, self.name)
+				self.playloop.store()
 				self.emit('play', current)
 			self.emit('queue', {'queue': list(self.playloop.queue), 'threshold': self.playloop.threshold})
 	def stop(self, sock=None, vidkey=None, reason=None):
