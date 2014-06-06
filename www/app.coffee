@@ -277,7 +277,7 @@ Player = React.createClass
 				addFavorite:	@props.addFavorite
 				removeFavorite:	@props.removeFavorite
 			PlayerAudio
-				key:	@state.vidkey + ':audio'
+				key:	@state.vidkey + ':' + @state.time + ':audio'
 				vidkey:	@state.vidkey
 				format:	@state.format
 				time:	@state.time
