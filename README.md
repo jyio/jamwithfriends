@@ -16,7 +16,7 @@ How this works
 
 - Clients pull audio directly from content providers
 - Clients pull only audio content, without video
-- The most-requested content plays first
+- Tracks with above-average popularity are enqueued
 - The playlist repeats when all content has been consumed
 
 Server requirements

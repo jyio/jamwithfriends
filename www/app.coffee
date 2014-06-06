@@ -198,7 +198,7 @@ PlayerHead = React.createClass
 		R.div {style: {margin: '0.15em auto', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}},
 			R.span {className: ('label label-' + if requested then 'success' else 'default'), style: {fontWeight: 'bold'}, onClick: (evt) => (if requested then @props.removeFavorite else @props.addFavorite) @props.vidkey},
 				R.i
-					className: 'glyphicon glyphicon-' + if requested then 'heart' else 'heart-empty'
+					className: 'glyphicon glyphicon-heart'
 			' '
 			R.span {className: 'label label-danger', style: {fontWeight: 'bold'}, onClick: (evt) => @props.skip()},
 				R.i
@@ -317,10 +317,11 @@ PlaylistItem = React.createClass
 				catch ex
 	render: ->
 		requested = @props.vidkey of @props.request
+		enqueued = if 'frequency' of @props and 'threshold' of @props then @props.frequency >= @props.threshold else false
 		R.tr {style: {margin: '0.5em auto'}},
 			R.td {style: {width: '1em'}},
 				R.span {className: ('label label-' + if requested then 'success' else 'default'), style: {fontWeight: 'bold'}, onClick: (evt) => (if requested then @props.removeFavorite else @props.addFavorite) @props.vidkey},
-					R.i {className: 'glyphicon glyphicon-' + if requested then 'heart' else 'heart-empty'}
+					R.i {className: 'glyphicon glyphicon-' + if enqueued then 'heart' else 'heart-empty'}
 					if 'frequency' of @props then " #{@props.frequency}" else ' '
 			R.td {style: {width: '1em', textAlign: 'right'}},
 				R.span null, "#{@state.minutes}:#{lpad(@state.seconds, 2)}"
@@ -330,14 +331,16 @@ PlaylistItem = React.createClass
 
 Playlist = React.createClass
 	getInitialState: ->
-		query:	''
+		query:		''
 		resultset:	[]
-		queue:	[]
+		queue:		[]
+		threshold:	0
 		history:	[]
 	componentDidMount: ->
 		@props.sock.on 'queue', (msg) =>
 			@setState
-				queue:	msg.queue
+				queue:		msg.queue
+				threshold:	msg.threshold
 		@props.sock.on 'history', (msg) =>
 			@setState
 				history:	msg.play
@@ -392,8 +395,25 @@ Playlist = React.createClass
 							request:	@props.request
 							vidkey: 	item[0]
 							frequency:	item[1]
+							threshold:	@state.threshold
 							addFavorite:	@props.addFavorite
 							removeFavorite:	@props.removeFavorite
+			R.div null,
+				'Click '
+				R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
+					R.i {className: 'glyphicon glyphicon-heart'}
+				' to request | Key: '
+				R.span {className: 'label label-success', style: {fontWeight: 'bold'}},
+					R.i {className: 'glyphicon glyphicon-heart'}
+					' requested'
+				' '
+				R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
+					R.i {className: 'glyphicon glyphicon-heart'}
+					' queued'
+				' '
+				R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
+					R.i {className: 'glyphicon glyphicon-heart-empty'}
+					' needs requests'
 			R.h1 {style: {display: (if @state.history.length > 0 then 'block' else 'none')}}, 'History'
 			R.table {className: 'table', style: {display: (if @state.history.length > 0 then 'block' else 'none'), fontSize: '1em'}},
 				R.tbody null,
@@ -688,36 +708,33 @@ App = React.createClass
 							R.span {style: {fontSize: '3em'}}, "#{window.location.host}/c/#{channel}"
 							R.br null
 							R.span {style: {fontSize: '2em', fontWeight: 'bold'}}, 'click to jam with friends'
+					R.h2 {style: {textAlign: 'center'}}, 'what is this?'
 					R.div {className: 'row'},
-						R.div {className: 'col-md-6 col-md-offset-3'},
-							R.h2 {style: {textAlign: 'center'}}, 'what is this?'
-							R.ul {style: {fontSize: '1.25em'}},
-								R.li null,
+						R.div {className: 'col-lg-4 col-lg-offset-4 col-md-6 col-md-offset-4 col-sm-8 col-sm-offset-3'},
+							R.div {style: {fontSize: '1.25em'}},
+								R.div null,
 									R.i {className: 'glyphicon glyphicon-refresh'}
 									' Synchronize online music with friends!'
-								R.li null,
+								R.div null,
+									R.i {className: 'glyphicon glyphicon-music'}
+									' Request from YouTube and SoundCloud'
+								R.div null,
 									R.i {className: 'glyphicon glyphicon-heart'}
-									' Request tracks from YouTube and SoundCloud'
-								R.li null,
-									R.i {className: 'glyphicon glyphicon-remove'}
-									' Vote to skip tracks'
-								R.li null,
-									R.i {className: 'glyphicon glyphicon-star'}
-									' Popular tracks play first'
-							R.h2 {style: {textAlign: 'center'}}, 'works best with'
-							R.div {style: {textAlign: 'center'}},
-								R.a {title: 'Google Chrome', href: 'https://www.google.com/chrome/', target: '_blank'},
-									R.img
-										alt: 'Google Chrome'
-										src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_128x128.png'
-								R.a {title: 'Mozilla Firefox', href: 'https://www.mozilla.org/firefox/', target: '_blank'},
-									R.img
-										alt: 'Mozilla Firefox'
-										src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_128x128.png'
-								R.a {title: 'Apple Safari', href: 'https://www.apple.com/safari/', target: '_blank'},
-									R.img
-										alt: 'Apple Safari'
-										src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_128x128.png'
-							R.div {style: {textAlign: 'center', fontStyle: 'italic'}}, 'codec support may vary'
+									' Upvote your favorites'
+					R.h2 {style: {textAlign: 'center'}}, 'works best with'
+					R.div {style: {textAlign: 'center'}},
+						R.a {title: 'Google Chrome', href: 'https://www.google.com/chrome/', target: '_blank'},
+							R.img
+								alt: 'Google Chrome'
+								src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_128x128.png'
+						R.a {title: 'Mozilla Firefox', href: 'https://www.mozilla.org/firefox/', target: '_blank'},
+							R.img
+								alt: 'Mozilla Firefox'
+								src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_128x128.png'
+						R.a {title: 'Apple Safari', href: 'https://www.apple.com/safari/', target: '_blank'},
+							R.img
+								alt: 'Apple Safari'
+								src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_128x128.png'
+					R.div {style: {textAlign: 'center', fontStyle: 'italic'}}, 'codec support may vary'
 
 React.renderComponent App({channel: channel}), document.getElementById 'app'

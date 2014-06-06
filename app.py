@@ -151,6 +151,14 @@ def fetchdata_soundcloud(vidkey):
 		'format':	{},
 	}
 
+def median(data):
+	data = sorted(data)
+	n = len(data)
+	if n % 2:
+		return data[(n + 1) / 2 - 1]
+	else:
+		return (data[n / 2 - 1] + data[n / 2]) / 2.
+
 class DataStore(object):
 	def __init__(self, database=':memory:'):
 		self.db = db = sqlite3.connect(database)
@@ -218,6 +226,7 @@ class Playloop(object):
 		self.count = Counter()
 		self.done = set()
 		self.queue = ()
+		self.threshold = 0
 		self.current = None
 	def __iter__(self):
 		return self
@@ -237,6 +246,8 @@ class Playloop(object):
 				self.current = None
 	def next(self):
 		for vidkey, freq in self.queue:
+			if freq < self.threshold:
+				continue
 			self.done.add(vidkey)
 			data = fetchdata(vidkey)
 			if data is not None:
@@ -256,14 +267,18 @@ class Playloop(object):
 	def rehash(self):
 		next = []
 		later = []
+		never = []
 		for i in self.count.most_common():
-			if i[0] in self.done:
-				later.append(i)
+			if i[1] >= self.threshold:
+				if i[0] in self.done:
+					later.append(i)
+				else:
+					next.append(i)
 			else:
-				next.append(i)
+				never.append(i)
 		if len(next) < 1:
 			self.done.clear()
-		self.queue = tuple(next + later)
+		self.queue = tuple(next + later + never)
 	def request(self, key, value=None):
 		if value is not None:
 			value = set(value)
@@ -280,6 +295,7 @@ class Playloop(object):
 		else:
 			del self.req[key]
 		self.count += Counter()
+		self.threshold = median(i[1] for i in self.count.most_common()) if len(self.count) > 0 else 0
 		self.rehash()
 		return True
 	def getkey(self, value):
@@ -301,14 +317,14 @@ class Channel(object):
 		current = self.playloop.current
 		if sock is not None and sock.session['userhash'] in self.participant:
 			if self.playloop.request(sock.session['userhash'], req):
-				self.emit('queue', {'queue': list(self.playloop.queue)})
+				self.emit('queue', {'queue': list(self.playloop.queue), 'threshold': self.playloop.threshold})
 		if current is None:
 			current = self.playloop.next()
 			if current is not None:
 				self.set_stopped.clear()
 				self.playloop.store(self.datastore, self.name)
 				self.emit('play', current)
-			self.emit('queue', {'queue': list(self.playloop.queue)})
+			self.emit('queue', {'queue': list(self.playloop.queue), 'threshold': self.playloop.threshold})
 	def stop(self, sock=None, vidkey=None, reason=None):
 		current = self.playloop.current
 		if sock is not None and current is not None and current['vidkey'] == vidkey and sock.session['userhash'] in self.participant:
@@ -347,7 +363,7 @@ class Channel(object):
 			self.emit_one(sock, 'nick', {'id': userhash, 'nick': usernick})
 		sock.session['channel'] = self
 		self.emit_one(sock, 'nicks', self.nickname)
-		self.emit('queue', {'queue': list(self.playloop.queue)})
+		self.emit_one(sock, 'queue', {'queue': list(self.playloop.queue), 'threshold': self.playloop.threshold})
 		if self.playloop.current is not None:
 			self.emit_one(sock, 'play', self.playloop.current)
 		self.emit_one(sock, 'history', {
@@ -372,7 +388,7 @@ class Channel(object):
 					del self.nickname[userhash]
 					self.emit('part', {'id': userhash})
 					if self.playloop.request(sock.session['userhash'], None):
-						self.emit('queue', {'queue': list(self.playloop.queue)})
+						self.emit('queue', {'queue': list(self.playloop.queue), 'threshold': self.playloop.threshold})
 					self.stop()
 			except KeyError:
 				pass

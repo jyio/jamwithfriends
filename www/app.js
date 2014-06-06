@@ -368,7 +368,7 @@ PlayerHead = React.createClass({
         };
       })(this)
     }, R.i({
-      className: 'glyphicon glyphicon-' + (requested ? 'heart' : 'heart-empty')
+      className: 'glyphicon glyphicon-heart'
     })), ' ', R.span({
       className: 'label label-danger',
       style: {
@@ -563,8 +563,9 @@ PlaylistItem = React.createClass({
     })(this));
   },
   render: function() {
-    var requested;
+    var enqueued, requested;
     requested = this.props.vidkey in this.props.request;
+    enqueued = 'frequency' in this.props && 'threshold' in this.props ? this.props.frequency >= this.props.threshold : false;
     return R.tr({
       style: {
         margin: '0.5em auto'
@@ -584,7 +585,7 @@ PlaylistItem = React.createClass({
         };
       })(this)
     }, R.i({
-      className: 'glyphicon glyphicon-' + (requested ? 'heart' : 'heart-empty')
+      className: 'glyphicon glyphicon-' + (enqueued ? 'heart' : 'heart-empty')
     }), 'frequency' in this.props ? " " + this.props.frequency : ' ')), R.td({
       style: {
         width: '1em',
@@ -604,6 +605,7 @@ Playlist = React.createClass({
       query: '',
       resultset: [],
       queue: [],
+      threshold: 0,
       history: []
     };
   },
@@ -611,7 +613,8 @@ Playlist = React.createClass({
     this.props.sock.on('queue', (function(_this) {
       return function(msg) {
         return _this.setState({
-          queue: msg.queue
+          queue: msg.queue,
+          threshold: msg.threshold
         });
       };
     })(this));
@@ -715,12 +718,41 @@ Playlist = React.createClass({
           request: this.props.request,
           vidkey: item[0],
           frequency: item[1],
+          threshold: this.state.threshold,
           addFavorite: this.props.addFavorite,
           removeFavorite: this.props.removeFavorite
         }));
       }
       return _results;
-    }).call(this))), R.h1({
+    }).call(this))), R.div(null, 'Click ', R.span({
+      className: 'label label-default',
+      style: {
+        fontWeight: 'bold'
+      }
+    }, R.i({
+      className: 'glyphicon glyphicon-heart'
+    })), ' to request | Key: ', R.span({
+      className: 'label label-success',
+      style: {
+        fontWeight: 'bold'
+      }
+    }, R.i({
+      className: 'glyphicon glyphicon-heart'
+    }), ' requested'), ' ', R.span({
+      className: 'label label-default',
+      style: {
+        fontWeight: 'bold'
+      }
+    }, R.i({
+      className: 'glyphicon glyphicon-heart'
+    }), ' queued'), ' ', R.span({
+      className: 'label label-default',
+      style: {
+        fontWeight: 'bold'
+      }
+    }, R.i({
+      className: 'glyphicon glyphicon-heart-empty'
+    }), ' needs requests')), R.h1({
       style: {
         display: (this.state.history.length > 0 ? 'block' : 'none')
       }
@@ -1271,27 +1303,25 @@ App = React.createClass({
         fontSize: '2em',
         fontWeight: 'bold'
       }
-    }, 'click to jam with friends'))), R.div({
-      className: 'row'
-    }, R.div({
-      className: 'col-md-6 col-md-offset-3'
-    }, R.h2({
+    }, 'click to jam with friends'))), R.h2({
       style: {
         textAlign: 'center'
       }
-    }, 'what is this?'), R.ul({
+    }, 'what is this?'), R.div({
+      className: 'row'
+    }, R.div({
+      className: 'col-lg-4 col-lg-offset-4 col-md-6 col-md-offset-4 col-sm-8 col-sm-offset-3'
+    }, R.div({
       style: {
         fontSize: '1.25em'
       }
-    }, R.li(null, R.i({
+    }, R.div(null, R.i({
       className: 'glyphicon glyphicon-refresh'
-    }), ' Synchronize online music with friends!'), R.li(null, R.i({
+    }), ' Synchronize online music with friends!'), R.div(null, R.i({
+      className: 'glyphicon glyphicon-music'
+    }), ' Request from YouTube and SoundCloud'), R.div(null, R.i({
       className: 'glyphicon glyphicon-heart'
-    }), ' Request tracks from YouTube and SoundCloud'), R.li(null, R.i({
-      className: 'glyphicon glyphicon-remove'
-    }), ' Vote to skip tracks'), R.li(null, R.i({
-      className: 'glyphicon glyphicon-star'
-    }), ' Popular tracks play first')), R.h2({
+    }), ' Upvote your favorites')))), R.h2({
       style: {
         textAlign: 'center'
       }
@@ -1325,7 +1355,7 @@ App = React.createClass({
         textAlign: 'center',
         fontStyle: 'italic'
       }
-    }, 'codec support may vary')))));
+    }, 'codec support may vary')));
   }
 });
 
