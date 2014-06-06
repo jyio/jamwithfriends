@@ -387,17 +387,27 @@ Playlist = React.createClass
 							vidkey: 	item
 							addFavorite:	@props.addFavorite
 							removeFavorite:	@props.removeFavorite
-			R.table {className: 'table', style: {fontSize: '1em'}},
-				R.tbody null,
-					for item in @state.queue
-						PlaylistItem
-							key:		item[0]
-							request:	@props.request
-							vidkey: 	item[0]
-							frequency:	item[1]
-							threshold:	@state.threshold
-							addFavorite:	@props.addFavorite
-							removeFavorite:	@props.removeFavorite
+			if @state.queue.length > 0
+				R.table {className: 'table', style: {fontSize: '1em'}},
+					R.tbody null,
+						for item in @state.queue
+							PlaylistItem
+								key:		item[0]
+								request:	@props.request
+								vidkey: 	item[0]
+								frequency:	item[1]
+								threshold:	@state.threshold
+								addFavorite:	@props.addFavorite
+								removeFavorite:	@props.removeFavorite
+			else
+				R.h3 {style: {textAlign: 'center'}},
+					R.div null,
+						'There are no requests, so I\'m playing random tracks.'
+					R.div null,
+						'Search YouTube using the bar above. Click '
+						R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
+							R.i {className: 'glyphicon glyphicon-heart-empty'}
+						' to request.'
 			R.div null,
 				'Click '
 				R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
