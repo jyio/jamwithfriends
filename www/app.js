@@ -1268,16 +1268,19 @@ App = React.createClass({
       }
     }, "" + window.location.host + "/c/" + channel), R.br(null), R.span({
       style: {
-        fontSize: '2em'
+        fontSize: '2em',
+        fontWeight: 'bold'
       }
-    }, 'click to synchronize music with friends'))), R.h2({
+    }, 'click to jam with friends'))), R.div({
+      className: 'row'
+    }, R.div({
+      className: 'col-md-6 col-md-offset-3'
+    }, R.h2({
       style: {
         textAlign: 'center'
       }
     }, 'what is this?'), R.ul({
       style: {
-        width: '50%',
-        margin: '0 auto',
         fontSize: '1.25em'
       }
     }, R.li(null, R.i({
@@ -1296,13 +1299,33 @@ App = React.createClass({
       style: {
         textAlign: 'center'
       }
+    }, R.a({
+      title: 'Google Chrome',
+      href: 'https://www.google.com/chrome/',
+      target: '_blank'
     }, R.img({
-      src: '//raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_128x128.png'
-    }), R.img({
-      src: '//raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_128x128.png'
-    }), R.img({
-      src: '//raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_128x128.png'
-    }))));
+      alt: 'Google Chrome',
+      src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_128x128.png'
+    })), R.a({
+      title: 'Mozilla Firefox',
+      href: 'https://www.mozilla.org/firefox/',
+      target: '_blank'
+    }, R.img({
+      alt: 'Mozilla Firefox',
+      src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_128x128.png'
+    })), R.a({
+      title: 'Apple Safari',
+      href: 'https://www.apple.com/safari/',
+      target: '_blank'
+    }, R.img({
+      alt: 'Apple Safari',
+      src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_128x128.png'
+    }))), R.div({
+      style: {
+        textAlign: 'center',
+        fontStyle: 'italic'
+      }
+    }, 'codec support may vary')))));
   }
 });
 

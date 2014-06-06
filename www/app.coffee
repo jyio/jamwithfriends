@@ -687,28 +687,37 @@ App = React.createClass
 						R.button {className: 'btn btn-success', onClick: @setupSock},
 							R.span {style: {fontSize: '3em'}}, "#{window.location.host}/c/#{channel}"
 							R.br null
-							R.span {style: {fontSize: '2em'}}, 'click to synchronize music with friends'
-					R.h2 {style: {textAlign: 'center'}}, 'what is this?'
-					R.ul {style: {width: '50%', margin: '0 auto', fontSize: '1.25em'}},
-						R.li null,
-							R.i {className: 'glyphicon glyphicon-refresh'}
-							' Synchronize online music with friends!'
-						R.li null,
-							R.i {className: 'glyphicon glyphicon-heart'}
-							' Request tracks from YouTube and SoundCloud'
-						R.li null,
-							R.i {className: 'glyphicon glyphicon-remove'}
-							' Vote to skip tracks'
-						R.li null,
-							R.i {className: 'glyphicon glyphicon-star'}
-							' Popular tracks play first'
-					R.h2 {style: {textAlign: 'center'}}, 'works best with'
-					R.div {style: {textAlign: 'center'}},
-						R.img
-							src: '//raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_128x128.png'
-						R.img
-							src: '//raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_128x128.png'
-						R.img
-							src: '//raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_128x128.png'
+							R.span {style: {fontSize: '2em', fontWeight: 'bold'}}, 'click to jam with friends'
+					R.div {className: 'row'},
+						R.div {className: 'col-md-6 col-md-offset-3'},
+							R.h2 {style: {textAlign: 'center'}}, 'what is this?'
+							R.ul {style: {fontSize: '1.25em'}},
+								R.li null,
+									R.i {className: 'glyphicon glyphicon-refresh'}
+									' Synchronize online music with friends!'
+								R.li null,
+									R.i {className: 'glyphicon glyphicon-heart'}
+									' Request tracks from YouTube and SoundCloud'
+								R.li null,
+									R.i {className: 'glyphicon glyphicon-remove'}
+									' Vote to skip tracks'
+								R.li null,
+									R.i {className: 'glyphicon glyphicon-star'}
+									' Popular tracks play first'
+							R.h2 {style: {textAlign: 'center'}}, 'works best with'
+							R.div {style: {textAlign: 'center'}},
+								R.a {title: 'Google Chrome', href: 'https://www.google.com/chrome/', target: '_blank'},
+									R.img
+										alt: 'Google Chrome'
+										src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_128x128.png'
+								R.a {title: 'Mozilla Firefox', href: 'https://www.mozilla.org/firefox/', target: '_blank'},
+									R.img
+										alt: 'Mozilla Firefox'
+										src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_128x128.png'
+								R.a {title: 'Apple Safari', href: 'https://www.apple.com/safari/', target: '_blank'},
+									R.img
+										alt: 'Apple Safari'
+										src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_128x128.png'
+							R.div {style: {textAlign: 'center', fontStyle: 'italic'}}, 'codec support may vary'
 
 React.renderComponent App({channel: channel}), document.getElementById 'app'
