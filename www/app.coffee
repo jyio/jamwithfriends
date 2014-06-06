@@ -401,8 +401,9 @@ Playlist = React.createClass
 								removeFavorite:	@props.removeFavorite
 			else
 				R.h3 {style: {textAlign: 'center'}},
-					R.div null,
-						'There are no requests, so I\'m playing random tracks.'
+					if @state.history.length > 0
+						R.div null,
+							'There are no requests, so I\'m playing random tracks.'
 					R.div null,
 						'Search YouTube using the bar above. Click '
 						R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
