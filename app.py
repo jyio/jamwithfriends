@@ -4,6 +4,7 @@ import re
 import json
 import math
 import time
+import random
 import hashlib
 import sqlite3
 import weakref
@@ -197,6 +198,15 @@ class DataStore(object):
 		else:
 			res = self.db.execute('SELECT * FROM play WHERE dst=? AND ?-time < 604800 ORDER BY time DESC LIMIT ?', (dst, time.time(), limit))
 		return (r['track'] for r in res)
+	def random_play(self, dst):
+		now = time.time()
+		for i in xrange(1, 5):
+			if random.randint(0, 1):
+				r = self.db.cursor().execute('SELECT track FROM play WHERE dst=? AND ?-time < ? ORDER BY RANDOM() LIMIT 1', (dst, now, i * 604800)).fetchone()
+				if r is not None:
+					return r[0]
+		r = self.db.cursor().execute('SELECT track FROM play WHERE dst=? ORDER BY RANDOM() LIMIT 1', (dst,)).fetchone()
+		return None if r is None else r[0]
 	def store_chat(self, payload):
 		with self.db as db:
 			db.execute('INSERT INTO chat (time, dst, src, snick, playing, body) values (?, ?, ?, ?, ?, ?)', (
@@ -254,16 +264,23 @@ class Playloop(object):
 			data = fetchdata(vidkey)
 			if data is not None:
 				self.rehash()
-				self.current = {
-					'vidkey':	data['vidkey'],
-					'url':		data['url'],
-					'title':	data['title'],
-					'format':	data['format'],
-					'requester':	list(self.getkey(vidkey)),
-					'time':		time.time(),
-				}
-				return self.current
-		return None
+				break
+		else:
+			vidkey = self.datastore.random_play(self.name)
+			if vidkey is None:
+				return
+			data = fetchdata(vidkey)
+			if data is None:
+				return
+		self.current = {
+			'vidkey':	data['vidkey'],
+			'url':		data['url'],
+			'title':	data['title'],
+			'format':	data['format'],
+			'requester':	list(self.getkey(vidkey)),
+			'time':		time.time(),
+		}
+		return self.current
 	def reset(self):
 		self.current = None
 	def rehash(self):
