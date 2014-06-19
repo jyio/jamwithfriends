@@ -415,12 +415,14 @@ PlayerAudio = React.createClass({
         });
       });
       node.addEventListener('canplay', function() {
+        return this.play();
+      });
+      node.addEventListener('play', function() {
         var seek;
         seek = time.synctime() - self.props.time;
         if (Math.abs(this.currentTime - seek) > 1) {
-          this.currentTime = seek;
+          return this.currentTime = seek;
         }
-        return this.play();
       });
       node.addEventListener('volumechange', function() {
         return self.props.setvolume(this.volume, this.muted);

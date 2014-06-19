@@ -225,10 +225,11 @@ PlayerAudio = React.createClass
 					vidkey:	self.props.vidkey
 					reason:	'end'
 			node.addEventListener 'canplay', ->
+				@play()
+			node.addEventListener 'play', ->
 				seek = time.synctime() - self.props.time
 				if Math.abs(@currentTime - seek) > 1
 					@currentTime = seek
-				@play()
 			node.addEventListener 'volumechange', -> self.props.setvolume @volume, @muted
 			errback = (evt) ->
 				if node.currentSrc == ''
