@@ -443,6 +443,9 @@ PlayerAudio = React.createClass({
       return node.currentTime = 0;
     }
   },
+  componentWillUnmount: function() {
+    return this.getDOMNode().pause();
+  },
   render: function() {
     var fmt, source, _i, _len, _ref;
     source = [];
