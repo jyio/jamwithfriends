@@ -241,7 +241,9 @@ PlayerAudio = React.createClass
 			node.pause()
 			node.currentTime = 0
 	componentWillUnmount: ->
-		@getDOMNode().pause()
+		node = @getDOMNode()
+		node.pause()
+		$(node).empty().remove()
 	render: ->
 		source = []
 		if @props.vidkey

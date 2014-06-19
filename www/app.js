@@ -442,7 +442,10 @@ PlayerAudio = React.createClass({
     }
   },
   componentWillUnmount: function() {
-    return this.getDOMNode().pause();
+    var node;
+    node = this.getDOMNode();
+    node.pause();
+    return $(node).empty().remove();
   },
   render: function() {
     var fmt, source, _i, _len, _ref;
