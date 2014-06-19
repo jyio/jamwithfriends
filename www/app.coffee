@@ -232,12 +232,10 @@ PlayerAudio = React.createClass
 					@currentTime = seek
 			node.addEventListener 'volumechange', -> self.props.setvolume @volume, @muted
 			errback = (evt) ->
-				if node.currentSrc == ''
+				if node.networkState == 3 or node.currentSrc == ''
 					self.props.sock.emit 'stop',
 						vidkey:	self.props.vidkey
 						reason:	'error'
-				else if node.networkState == 3
-					console.log 'NETWORK_NO_SOURCE'
 			node.addEventListener 'error', _.debounce(errback, 100), true
 		else
 			node.pause()

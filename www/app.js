@@ -428,13 +428,11 @@ PlayerAudio = React.createClass({
         return self.props.setvolume(this.volume, this.muted);
       });
       errback = function(evt) {
-        if (node.currentSrc === '') {
+        if (node.networkState === 3 || node.currentSrc === '') {
           return self.props.sock.emit('stop', {
             vidkey: self.props.vidkey,
             reason: 'error'
           });
-        } else if (node.networkState === 3) {
-          return console.log('NETWORK_NO_SOURCE');
         }
       };
       return node.addEventListener('error', _.debounce(errback, 100), true);
