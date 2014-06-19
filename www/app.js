@@ -445,7 +445,7 @@ PlayerAudio = React.createClass({
     var node;
     node = this.getDOMNode();
     node.pause();
-    return $(node).empty().remove();
+    return $(node).empty();
   },
   render: function() {
     var fmt, source, _i, _len, _ref;
