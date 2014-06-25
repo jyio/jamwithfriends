@@ -191,63 +191,34 @@ Titleblock = React.createClass
 			R.h3 {style: {margin: '0'}},
 				R.a {href: "/c/#{channel}"}, "#{window.location.host}/c/#{channel}"
 
-PlayerHead = React.createClass
-	getInitialState: ->
-		title:		@props.vidkey
-		minutes:	0
-		seconds:	0
-	componentDidMount: ->
-		if @props.vidkey
-			fetchdata @props.vidkey
-				.done (data) =>
-					@setState
-						title:		data.title
-						minutes:	parseInt data.duration / 60
-						seconds:	parseInt Math.round data.duration % 60
-	render: ->
-		volume = @props.getvolume()
-		requested = @props.vidkey of @props.request
-		document.title = "#{@state.title} - #{channel} - jam with friends"
-		R.div {style: {margin: '0.15em auto', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}},
-			R.span {className: ('label label-' + if requested then 'success' else 'default'), style: {fontWeight: 'bold'}, onClick: (evt) => (if requested then @props.removeFavorite else @props.addFavorite) @props.vidkey},
-				R.i
-					className: 'glyphicon glyphicon-heart'
-			' '
-			R.span {className: ('label label-' + if volume.muted then 'default' else 'success'), style: {fontWeight: 'bold'}, onClick: (evt) => @props.setvolume(1, not volume.muted)},
-				R.i
-					className: 'glyphicon glyphicon-volume-' + if volume.muted then 'off' else 'up'
-			' '
-			R.span {className: 'label label-danger', style: {fontWeight: 'bold'}, onClick: (evt) => @props.skip()},
-				R.i
-					className: 'glyphicon glyphicon-remove'
-			' '
-			R.span {className: 'label label-default', style: {fontWeight: 'bold'}}, @props.formatname.toUpperCase()
-			' '
-			R.span {className: 'label label-default', style: {fontWeight: 'bold'}}, "#{@state.minutes}:#{lpad(@state.seconds, 2)}"
-			R.br null
-			R.a {href: denormalize @props.vidkey, target: '_blank'},
-				@state.title
-
 Player = React.createClass
 	getInitialState: ->
 		vidkey:	null
 		title:	null
 		format:	null
-		time:	null
+		tstart:	null
+		tduration:	0
+		tremaining:	0
 		formatname:	'unsupported'
 		muted:	false
 		volume:	1
 	componentDidMount: ->
 		audio = @props.audio
+		setInterval =>
+			@setState
+				tremaining: Math.max 0, @state.tduration - audio.currentTime
+		, 1000
 		@props.sock.on 'play', (msg) =>
 			fetchdata msg.vidkey
 				.done (data) =>
 					format = if 'format' of data then data.format else msg.format
-					@setState
+					newstate =
 						vidkey:	data.vidkey
 						title:	data.title
 						format:	format
-						time:	msg.time
+						tstart:	msg.time
+						tduration:	data.duration
+						tremaining:	data.duration
 					audio.pause()
 					audio.type = ''
 					audio.src = ''
@@ -255,15 +226,14 @@ Player = React.createClass
 						if fmt of format and audio.canPlayType(format[fmt].type)
 							audio.type = format[fmt].type
 							audio.src = format[fmt].url
-							@setState
-								formatname: fmt
+							newstate.formatname = fmt
 							break
 					if not audio.src
-						@setState
-							formatname: 'unsupported'
+						newstate.formatname = 'unsupported'
 						self.props.sock.emit 'stop',
 							vidkey:	@state.vidkey
 							reason:	'error'
+					@setState newstate
 		audio.addEventListener 'stalled', => audio.load()
 		audio.addEventListener 'ended', =>
 			@props.sock.emit 'stop',
@@ -275,19 +245,34 @@ Player = React.createClass
 			if Math.abs(audio.currentTime - seek) > 1
 				audio.currentTime = seek
 	render: ->
-		document.title = "#{channel} - jam with friends"
-		R.div null, if @state.vidkey then [
-			PlayerHead
-				key:	@state.vidkey + ':head'
-				vidkey:	@state.vidkey
-				formatname:	@state.formatname
-				skip:	@skip
-				request:		@props.request
-				addFavorite:	@props.addFavorite
-				removeFavorite:	@props.removeFavorite
-				getvolume:	@getvolume
-				setvolume:	@setvolume
-		] else []
+		if @state.vidkey
+			volume = @getvolume()
+			requested = @props.vidkey of @props.request
+			document.title = "#{@state.title} - #{channel} - jam with friends"
+			R.div {style: {margin: '0.15em auto', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}},
+				R.span {className: ('label label-' + if requested then 'success' else 'default'), style: {fontWeight: 'bold'}, onClick: (evt) => (if requested then @props.removeFavorite else @props.addFavorite) @props.vidkey},
+					R.i
+						className: 'glyphicon glyphicon-heart'
+				' '
+				R.span {className: ('label label-' + if volume.muted then 'default' else 'success'), style: {fontWeight: 'bold'}, onClick: (evt) => @props.setvolume(1, not volume.muted)},
+					R.i
+						className: 'glyphicon glyphicon-volume-' + if volume.muted then 'off' else 'up'
+				' '
+				R.span {className: 'label label-danger', style: {fontWeight: 'bold'}, onClick: (evt) => @skip()},
+					R.i
+						className: 'glyphicon glyphicon-remove'
+				' '
+				R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
+					@state.formatname.toUpperCase()
+				' '
+				R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
+					"#{parseInt @state.tremaining / 60}:#{lpad parseInt(Math.round @state.tremaining % 60), 2}"
+				R.br null
+				R.a {href: denormalize @state.vidkey, target: '_blank'},
+					@state.title
+		else
+			document.title = "#{channel} - jam with friends"
+			R.div null
 	getvolume: ->
 		volume:	@state.volume
 		muted:	@state.muted
