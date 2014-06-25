@@ -128,6 +128,19 @@ isInViewport = (el) ->
 		(rect.bottom <= (window.innerHeight or document.documentElement.clientHeight)) and
 		(rect.right <= (window.innerWidth or document.documentElement.clientWidth))
 	)
+
+isMobile = ->
+	agent = navigator.userAgent
+	if /Android/i.test agent
+		'android'
+	else if /BlackBerry/i.test agent
+		'blackberry'
+	else if /iPhone|iPad|iPod/i.test agent
+		'ios'
+	else if /IEMobile/i.test agent
+		'windows'
+	else null
+
 NickInput = React.createClass
 	render: ->
 		R.div {className: 'input-group'},
@@ -658,8 +671,15 @@ App = React.createClass
 			@persist()
 		@setState
 			sock:	sock
+	clickSetup: ->
+		audio = @state.audio
+		audio.src = '/silence.mp3'
+		audio.load()
+		audio.play()
+		audio.pause()
+		@setupSock()
 	componentDidMount: ->
-		if time.time() - @state.lastpersist < 900
+		if time.time() - @state.lastpersist < 900 and not isMobile()
 			@setupSock()
 		$.getJSON '/a/recentchannels', (data) =>
 			@setState
@@ -709,7 +729,7 @@ App = React.createClass
 			else
 				R.div {className: 'container'},
 					R.h2 {style: {textAlign: 'center'}},
-						R.button {className: 'btn btn-success', onClick: @setupSock},
+						R.button {className: 'btn btn-success', onClick: @clickSetup},
 							R.span {style: {fontSize: '3em'}}, "#{window.location.host}/c/#{channel}"
 							R.br null
 							R.span {style: {fontSize: '2em', fontWeight: 'bold'}}, 'click to jam with friends'
