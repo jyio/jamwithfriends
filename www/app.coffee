@@ -247,27 +247,28 @@ Player = React.createClass
 			volume = @getvolume()
 			requested = @props.vidkey of @props.request
 			document.title = "#{@state.title} - #{channel} - jam with friends"
-			R.div {style: {margin: '0.15em auto', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}},
-				R.span {className: ('label label-' + if requested then 'success' else 'default'), style: {fontWeight: 'bold'}, onClick: (evt) => (if requested then @props.removeFavorite else @props.addFavorite) @props.vidkey},
-					R.i
-						className: 'glyphicon glyphicon-heart'
-				' '
-				R.span {className: ('label label-' + if volume.muted then 'default' else 'success'), style: {fontWeight: 'bold'}, onClick: (evt) => @setvolume(1, not volume.muted)},
-					R.i
-						className: 'glyphicon glyphicon-volume-' + if volume.muted then 'off' else 'up'
-				' '
-				R.span {className: 'label label-danger', style: {fontWeight: 'bold'}, onClick: (evt) => @skip()},
-					R.i
-						className: 'glyphicon glyphicon-remove'
-				' '
-				R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
-					@state.formatname.toUpperCase()
-				' '
-				R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
-					"#{parseInt @state.tremaining / 60}:#{lpad parseInt(Math.round @state.tremaining % 60), 2}"
-				R.br null
-				R.a {href: denormalize @state.vidkey, target: '_blank'},
-					@state.title
+			R.div {style: {margin: '0.15em auto', textAlign: 'center'}},
+				R.div null,
+					R.span {className: ('label label-' + if requested then 'success' else 'default'), style: {fontWeight: 'bold'}, onClick: (evt) => (if requested then @props.removeFavorite else @props.addFavorite) @props.vidkey},
+						R.i
+							className: 'glyphicon glyphicon-heart'
+					' '
+					R.span {className: ('label label-' + if volume.muted then 'default' else 'success'), style: {fontWeight: 'bold'}, onClick: (evt) => @setvolume(1, not volume.muted)},
+						R.i
+							className: 'glyphicon glyphicon-volume-' + if volume.muted then 'off' else 'up'
+					' '
+					R.span {className: 'label label-danger', style: {fontWeight: 'bold'}, onClick: (evt) => @skip()},
+						R.i
+							className: 'glyphicon glyphicon-remove'
+					' '
+					R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
+						@state.formatname.toUpperCase()
+					' '
+					R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
+						"#{parseInt @state.tremaining / 60}:#{lpad parseInt(Math.round @state.tremaining % 60), 2}"
+				R.div {style: {whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}},
+					R.a {href: denormalize @state.vidkey, target: '_blank'},
+						@state.title
 		else
 			document.title = "#{channel} - jam with friends"
 			R.div null
@@ -704,12 +705,12 @@ App = React.createClass
 				R.div {className: 'container'},
 					R.div {className: 'row'},
 						R.div {id: 'left', className: 'col-md-8'},
-							R.div {className: 'row', style: {marginBottom: '1.2em'}},
+							R.div {className: 'row'},
 								R.div {className: 'col-md-6'},
 									Titleblock
 										connected:	@state.connected
 										count:		count
-								R.div {className: 'col-md-6', style: {marginTop: '0.5em'}},
+								R.div {className: 'col-md-6', style: {marginTop: '1em'}},
 									Player
 										request:		request
 										addFavorite:	@addFavorite
@@ -760,15 +761,15 @@ App = React.createClass
 						R.a {title: 'Google Chrome', href: 'https://www.google.com/chrome/', target: '_blank'},
 							R.img
 								alt: 'Google Chrome'
-								src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_128x128.png'
+								src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_64x64.png'
 						R.a {title: 'Mozilla Firefox', href: 'https://www.mozilla.org/firefox/', target: '_blank'},
 							R.img
 								alt: 'Mozilla Firefox'
-								src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_128x128.png'
+								src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_64x64.png'
 						R.a {title: 'Apple Safari', href: 'https://www.apple.com/safari/', target: '_blank'},
 							R.img
 								alt: 'Apple Safari'
-								src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_128x128.png'
+								src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_64x64.png'
 					R.div {style: {textAlign: 'center', fontStyle: 'italic'}}, 'codec support may vary'
 
 React.renderComponent App({channel: channel}), document.getElementById 'app'

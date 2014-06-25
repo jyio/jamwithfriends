@@ -434,12 +434,9 @@ Player = React.createClass({
       return R.div({
         style: {
           margin: '0.15em auto',
-          textAlign: 'center',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
+          textAlign: 'center'
         }
-      }, R.span({
+      }, R.div(null, R.span({
         className: 'label label-' + (requested ? 'success' : 'default'),
         style: {
           fontWeight: 'bold'
@@ -485,11 +482,17 @@ Player = React.createClass({
         style: {
           fontWeight: 'bold'
         }
-      }, "" + (parseInt(this.state.tremaining / 60)) + ":" + (lpad(parseInt(Math.round(this.state.tremaining % 60)), 2))), R.br(null), R.a({
+      }, "" + (parseInt(this.state.tremaining / 60)) + ":" + (lpad(parseInt(Math.round(this.state.tremaining % 60)), 2)))), R.div({
+        style: {
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }
+      }, R.a({
         href: denormalize(this.state.vidkey, {
           target: '_blank'
         })
-      }, this.state.title));
+      }, this.state.title)));
     } else {
       document.title = "" + channel + " - jam with friends";
       return R.div(null);
@@ -1307,10 +1310,7 @@ App = React.createClass({
       id: 'left',
       className: 'col-md-8'
     }, R.div({
-      className: 'row',
-      style: {
-        marginBottom: '1.2em'
-      }
+      className: 'row'
     }, R.div({
       className: 'col-md-6'
     }, Titleblock({
@@ -1319,7 +1319,7 @@ App = React.createClass({
     })), R.div({
       className: 'col-md-6',
       style: {
-        marginTop: '0.5em'
+        marginTop: '1em'
       }
     }, Player({
       request: request,
@@ -1407,21 +1407,21 @@ App = React.createClass({
       target: '_blank'
     }, R.img({
       alt: 'Google Chrome',
-      src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_128x128.png'
+      src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/chrome/chrome_64x64.png'
     })), R.a({
       title: 'Mozilla Firefox',
       href: 'https://www.mozilla.org/firefox/',
       target: '_blank'
     }, R.img({
       alt: 'Mozilla Firefox',
-      src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_128x128.png'
+      src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/firefox/firefox_64x64.png'
     })), R.a({
       title: 'Apple Safari',
       href: 'https://www.apple.com/safari/',
       target: '_blank'
     }, R.img({
       alt: 'Apple Safari',
-      src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_128x128.png'
+      src: 'https://raw.githubusercontent.com/alrra/browser-logos/master/safari/safari_64x64.png'
     }))), R.div({
       style: {
         textAlign: 'center',
