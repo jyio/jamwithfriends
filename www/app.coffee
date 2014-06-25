@@ -285,6 +285,7 @@ Player = React.createClass
 	skip: ->
 		vidkey = @state.vidkey
 		if vidkey
+			@props.audio.pause()
 			@setState
 				vidkey:	null
 			@props.sock.emit 'stop',

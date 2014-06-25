@@ -517,6 +517,7 @@ Player = React.createClass({
     var vidkey;
     vidkey = this.state.vidkey;
     if (vidkey) {
+      this.props.audio.pause();
       this.setState({
         vidkey: null
       });
