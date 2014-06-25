@@ -462,7 +462,7 @@ Player = React.createClass({
         },
         onClick: (function(_this) {
           return function(evt) {
-            return _this.props.setvolume(1, !volume.muted);
+            return _this.setvolume(1, !volume.muted);
           };
         })(this)
       }, R.i({

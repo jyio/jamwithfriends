@@ -254,7 +254,7 @@ Player = React.createClass
 					R.i
 						className: 'glyphicon glyphicon-heart'
 				' '
-				R.span {className: ('label label-' + if volume.muted then 'default' else 'success'), style: {fontWeight: 'bold'}, onClick: (evt) => @props.setvolume(1, not volume.muted)},
+				R.span {className: ('label label-' + if volume.muted then 'default' else 'success'), style: {fontWeight: 'bold'}, onClick: (evt) => @setvolume(1, not volume.muted)},
 					R.i
 						className: 'glyphicon glyphicon-volume-' + if volume.muted then 'off' else 'up'
 				' '
