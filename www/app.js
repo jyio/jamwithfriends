@@ -429,7 +429,7 @@ Player = React.createClass({
     var requested, volume;
     if (this.state.vidkey) {
       volume = this.getvolume();
-      requested = this.props.vidkey in this.props.request;
+      requested = this.state.vidkey in this.props.request;
       document.title = "" + this.state.title + " - " + channel + " - jam with friends";
       return R.div({
         style: {
@@ -443,7 +443,7 @@ Player = React.createClass({
         },
         onClick: (function(_this) {
           return function(evt) {
-            return (requested ? _this.props.removeFavorite : _this.props.addFavorite)(_this.props.vidkey);
+            return (requested ? _this.props.removeFavorite : _this.props.addFavorite)(_this.state.vidkey);
           };
         })(this)
       }, R.i({

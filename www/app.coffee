@@ -245,11 +245,11 @@ Player = React.createClass
 	render: ->
 		if @state.vidkey
 			volume = @getvolume()
-			requested = @props.vidkey of @props.request
+			requested = @state.vidkey of @props.request
 			document.title = "#{@state.title} - #{channel} - jam with friends"
 			R.div {style: {margin: '0.15em auto', textAlign: 'center'}},
 				R.div null,
-					R.span {className: ('label label-' + if requested then 'success' else 'default'), style: {fontWeight: 'bold'}, onClick: (evt) => (if requested then @props.removeFavorite else @props.addFavorite) @props.vidkey},
+					R.span {className: ('label label-' + if requested then 'success' else 'default'), style: {fontWeight: 'bold'}, onClick: (evt) => (if requested then @props.removeFavorite else @props.addFavorite) @state.vidkey},
 						R.i
 							className: 'glyphicon glyphicon-heart'
 					' '
