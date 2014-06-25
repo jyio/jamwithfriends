@@ -290,6 +290,23 @@ Player = React.createClass
 				vidkey:	vidkey
 				reason:	'skip'
 
+Listenerlist = React.createClass
+	getInitialState: ->
+		requester:	[]
+	componentDidMount: ->
+		@props.sock.on 'play', (msg) =>
+			@setState
+				requester:	msg.requester
+	render: ->
+		if @state.requester.length > 0
+			R.div null,
+				for src in @state.requester
+					R.img
+						key:	src
+						src:	'http://robohash.org/' + src + '.png?size=32x32'
+		else
+			R.div null
+
 PlaylistItem = React.createClass
 	getInitialState: ->
 		title:		@props.vidkey
@@ -699,6 +716,10 @@ App = React.createClass
 										removeFavorite:	@removeFavorite
 										sock:			@state.sock
 										audio:			@state.audio
+							R.div {className: 'row', style: {margin: '0.6em'}},
+								R.div {className: 'col-md-12'},
+									Listenerlist
+										sock:	@state.sock
 							R.div {className: 'row'},
 								R.div {className: 'col-md-12'},
 									Playlist
