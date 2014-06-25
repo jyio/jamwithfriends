@@ -422,7 +422,7 @@ Player = React.createClass({
     return audio.addEventListener('loadedmetadata', (function(_this) {
       return function() {
         var seek;
-        seek = time.synctime() - _this.state.time;
+        seek = time.synctime() - _this.state.tstart;
         if (Math.abs(audio.currentTime - seek) > 1) {
           return audio.currentTime = seek;
         }

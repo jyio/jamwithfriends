@@ -241,7 +241,7 @@ Player = React.createClass
 				reason:	'end'
 		audio.addEventListener 'canplay', => audio.play()
 		audio.addEventListener 'loadedmetadata', =>
-			seek = time.synctime() - @state.time
+			seek = time.synctime() - @state.tstart
 			if Math.abs(audio.currentTime - seek) > 1
 				audio.currentTime = seek
 	render: ->
