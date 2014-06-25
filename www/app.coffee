@@ -2,9 +2,7 @@ R = React.DOM
 
 $.cookie.json = true
 
-el = document.createElement 'a'
-el.href = window.location.href
-pathname = el.pathname.split '/'
+pathname = window.location.pathname.split '/'
 channel = 'bluejam'
 if pathname.length == 3
 	if pathname[0] == '' and pathname[1] == 'c'
