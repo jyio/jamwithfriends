@@ -575,14 +575,31 @@ PlaylistItem = React.createClass({
       className: 'glyphicon glyphicon-' + (enqueued ? 'heart' : 'heart-empty')
     }), 'frequency' in this.props ? " " + this.props.frequency : ' ')), R.td({
       style: {
-        width: '1em',
-        textAlign: 'right'
+        width: '1em'
       }
-    }, R.span(null, "" + this.state.minutes + ":" + (lpad(this.state.seconds, 2)))), R.td(null, R.a({
+    }, R.span({
+      className: 'label label-default',
+      style: {
+        fontWeight: 'bold'
+      }
+    }, R.a({
       href: denormalize(this.props.vidkey, {
         target: '_blank'
       })
-    }, this.state.title)));
+    }, R.i({
+      className: 'glyphicon glyphicon-link'
+    })))), R.td({
+      style: {
+        width: '1em',
+        textAlign: 'right'
+      }
+    }, R.span(null, "" + this.state.minutes + ":" + (lpad(this.state.seconds, 2)))), R.td({
+      onClick: (function(_this) {
+        return function(evt) {
+          return (requested ? _this.props.removeFavorite : _this.props.addFavorite)(_this.props.vidkey);
+        };
+      })(this)
+    }, this.state.title));
   }
 });
 

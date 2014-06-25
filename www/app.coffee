@@ -312,11 +312,15 @@ PlaylistItem = React.createClass
 				R.span {className: ('label label-' + if requested then 'success' else 'default'), style: {fontWeight: 'bold'}, onClick: (evt) => (if requested then @props.removeFavorite else @props.addFavorite) @props.vidkey},
 					R.i {className: 'glyphicon glyphicon-' + if enqueued then 'heart' else 'heart-empty'}
 					if 'frequency' of @props then " #{@props.frequency}" else ' '
+			R.td {style: {width: '1em'}},
+				R.span {className: 'label label-default', style: {fontWeight: 'bold'}},
+					R.a {href: denormalize @props.vidkey, target: '_blank'},
+						R.i
+							className:	'glyphicon glyphicon-link'
 			R.td {style: {width: '1em', textAlign: 'right'}},
 				R.span null, "#{@state.minutes}:#{lpad(@state.seconds, 2)}"
-			R.td null,
-				R.a {href: denormalize @props.vidkey, target: '_blank'},
-					@state.title
+			R.td {onClick: (evt) => (if requested then @props.removeFavorite else @props.addFavorite) @props.vidkey},
+				@state.title
 
 Playlist = React.createClass
 	getInitialState: ->
