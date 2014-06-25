@@ -128,7 +128,6 @@ isInViewport = (el) ->
 		(rect.bottom <= (window.innerHeight or document.documentElement.clientHeight)) and
 		(rect.right <= (window.innerWidth or document.documentElement.clientWidth))
 	)
-
 NickInput = React.createClass
 	render: ->
 		R.div {className: 'input-group'},
@@ -193,6 +192,7 @@ PlayerHead = React.createClass
 						minutes:	parseInt data.duration / 60
 						seconds:	parseInt Math.round data.duration % 60
 	render: ->
+		volume = @props.getvolume()
 		requested = @props.vidkey of @props.request
 		document.title = "#{@state.title} - #{channel} - jam with friends"
 		R.div {style: {margin: '0.15em auto', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}},
@@ -200,57 +200,20 @@ PlayerHead = React.createClass
 				R.i
 					className: 'glyphicon glyphicon-heart'
 			' '
+			R.span {className: ('label label-' + if volume.muted then 'default' else 'success'), style: {fontWeight: 'bold'}, onClick: (evt) => @props.setvolume(1, not volume.muted)},
+				R.i
+					className: 'glyphicon glyphicon-volume-' + if volume.muted then 'off' else 'up'
+			' '
 			R.span {className: 'label label-danger', style: {fontWeight: 'bold'}, onClick: (evt) => @props.skip()},
 				R.i
 					className: 'glyphicon glyphicon-remove'
-			" #{@state.minutes}:#{lpad(@state.seconds, 2)} - "
+			' '
+			R.span {className: 'label label-default', style: {fontWeight: 'bold'}}, @props.formatname.toUpperCase()
+			' '
+			R.span {className: 'label label-default', style: {fontWeight: 'bold'}}, "#{@state.minutes}:#{lpad(@state.seconds, 2)}"
+			R.br null
 			R.a {href: denormalize @props.vidkey, target: '_blank'},
 				@state.title
-
-PlayerAudio = React.createClass
-	getInitialState: ->
-		muted:	false
-		volume:	1
-		lastfmt:	null
-	componentDidMount: ->
-		self = @
-		node = @getDOMNode()
-		if self.props.vidkey
-			v = self.props.getvolume()
-			node.muted = v.muted
-			node.volume = v.volume
-			node.addEventListener 'stalled', -> @load()
-			node.addEventListener 'ended', ->
-				self.props.sock.emit 'stop',
-					vidkey:	self.props.vidkey
-					reason:	'end'
-			node.addEventListener 'canplay', ->
-				@play()
-			node.addEventListener 'play', ->
-				seek = time.synctime() - self.props.time
-				if Math.abs(@currentTime - seek) > 1
-					@currentTime = seek
-			node.addEventListener 'volumechange', -> self.props.setvolume @volume, @muted
-			errback = (evt) ->
-				if node.networkState == 3 or node.currentSrc == ''
-					self.props.sock.emit 'stop',
-						vidkey:	self.props.vidkey
-						reason:	'error'
-			node.addEventListener 'error', _.debounce(errback, 100), true
-		else
-			node.pause()
-			node.currentTime = 0
-	componentWillUnmount: ->
-		node = @getDOMNode()
-		node.pause()
-		$(node).empty()
-	render: ->
-		source = []
-		if @props.vidkey
-			for fmt in ['m4a', 'mp3', 'webm']
-				if fmt of @props.format
-					source.push R.source {src: @props.format[fmt].url, type: @props.format[fmt].type}
-		R.audio {controls: 'controls', style: {width: '100%'}}, source
 
 Player = React.createClass
 	getInitialState: ->
@@ -258,35 +221,59 @@ Player = React.createClass
 		title:	null
 		format:	null
 		time:	null
+		formatname:	'unsupported'
 		muted:	false
 		volume:	1
 	componentDidMount: ->
+		audio = @props.audio
 		@props.sock.on 'play', (msg) =>
 			fetchdata msg.vidkey
 				.done (data) =>
+					format = if 'format' of data then data.format else msg.format
 					@setState
 						vidkey:	data.vidkey
 						title:	data.title
-						format:	if 'format' of data then data.format else msg.format
+						format:	format
 						time:	msg.time
+					audio.pause()
+					audio.type = ''
+					audio.src = ''
+					for fmt in ['m4a', 'mp3', 'webm']
+						if fmt of format and audio.canPlayType(format[fmt].type)
+							audio.type = format[fmt].type
+							audio.src = format[fmt].url
+							@setState
+								formatname: fmt
+							break
+					if not audio.src
+						@setState
+							formatname: 'unsupported'
+						self.props.sock.emit 'stop',
+							vidkey:	@state.vidkey
+							reason:	'error'
+		audio.addEventListener 'stalled', => audio.load()
+		audio.addEventListener 'ended', =>
+			@props.sock.emit 'stop',
+				vidkey:	@state.vidkey
+				reason:	'end'
+		audio.addEventListener 'canplay', => audio.play()
+		audio.addEventListener 'loadedmetadata', =>
+			seek = time.synctime() - @state.time
+			if Math.abs(audio.currentTime - seek) > 1
+				audio.currentTime = seek
 	render: ->
 		document.title = "#{channel} - jam with friends"
 		R.div null, if @state.vidkey then [
 			PlayerHead
 				key:	@state.vidkey + ':head'
 				vidkey:	@state.vidkey
+				formatname:	@state.formatname
 				skip:	@skip
 				request:		@props.request
 				addFavorite:	@props.addFavorite
 				removeFavorite:	@props.removeFavorite
-			PlayerAudio
-				key:	@state.vidkey + ':' + @state.time + ':audio'
-				vidkey:	@state.vidkey
-				format:	@state.format
-				time:	@state.time
 				getvolume:	@getvolume
 				setvolume:	@setvolume
-				sock:	@props.sock
 		] else []
 	getvolume: ->
 		volume:	@state.volume
@@ -295,6 +282,8 @@ Player = React.createClass
 		@setState
 			volume:	volume
 			muted:	muted
+		@props.audio.volume = volume
+		@props.audio.muted = muted
 	skip: ->
 		vidkey = @state.vidkey
 		if vidkey
@@ -584,6 +573,7 @@ App = React.createClass
 	getInitialState: ->
 		r =
 			sock:	null
+			audio:	document.createElement('audio')
 			id:		''
 			cid:		randomid()
 			nick:		'User'
@@ -700,6 +690,7 @@ App = React.createClass
 										addFavorite:	@addFavorite
 										removeFavorite:	@removeFavorite
 										sock:			@state.sock
+										audio:			@state.audio
 							R.div {className: 'row'},
 								R.div {className: 'col-md-12'},
 									Playlist
