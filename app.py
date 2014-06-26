@@ -287,14 +287,14 @@ class Playloop(object):
 		next = []
 		later = []
 		never = []
-		for i in self.count.most_common():
-			if i[1] >= self.threshold:
-				if i[0] in self.done:
-					later.append(i)
+		for f, h, k in sorted(((f, hash(k), k) for k, f in self.count.most_common()), reverse=True):
+			if f >= self.threshold:
+				if k in self.done:
+					later.append((k, f))
 				else:
-					next.append(i)
+					next.append((k, f))
 			else:
-				never.append(i)
+				never.append((k, f))
 		if len(next) < 1:
 			self.done.clear()
 		self.queue = tuple(next + later + never)
