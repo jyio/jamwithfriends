@@ -318,6 +318,49 @@ Navbar = React.createClass({
   }
 });
 
+Listenerlist = React.createClass({
+  getInitialState: function() {
+    return {
+      requester: []
+    };
+  },
+  componentDidMount: function() {
+    return this.props.sock.on('play', (function(_this) {
+      return function(msg) {
+        return _this.setState({
+          requester: msg.requester
+        });
+      };
+    })(this));
+  },
+  render: function() {
+    var src;
+    if (this.state.requester.length > 0) {
+      return R.div(null, (function() {
+        var _i, _len, _ref, _results;
+        _ref = this.state.requester;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          src = _ref[_i];
+          _results.push(R.img({
+            key: src,
+            src: 'http://robohash.org/' + src + '.png?size=32x32'
+          }));
+        }
+        return _results;
+      }).call(this));
+    } else {
+      return R.h3({
+        style: {
+          margin: '0'
+        }
+      }, R.a({
+        href: "/c/" + channel
+      }, "" + window.location.host + "/c/" + channel));
+    }
+  }
+});
+
 Titleblock = React.createClass({
   render: function() {
     return R.div(null, R.h1({
@@ -326,13 +369,9 @@ Titleblock = React.createClass({
       }
     }, R.a({
       href: "/c/" + channel
-    }, "" + channel), this.props.connected ? " | " + this.props.count : ''), R.h3({
-      style: {
-        margin: '0'
-      }
-    }, R.a({
-      href: "/c/" + channel
-    }, "" + window.location.host + "/c/" + channel)));
+    }, "" + channel), this.props.connected ? " | " + this.props.count : ''), Listenerlist({
+      sock: this.props.sock
+    }));
   }
 });
 
@@ -524,43 +563,6 @@ Player = React.createClass({
         vidkey: vidkey,
         reason: 'skip'
       });
-    }
-  }
-});
-
-Listenerlist = React.createClass({
-  getInitialState: function() {
-    return {
-      requester: []
-    };
-  },
-  componentDidMount: function() {
-    return this.props.sock.on('play', (function(_this) {
-      return function(msg) {
-        return _this.setState({
-          requester: msg.requester
-        });
-      };
-    })(this));
-  },
-  render: function() {
-    var src;
-    if (this.state.requester.length > 0) {
-      return R.div(null, (function() {
-        var _i, _len, _ref, _results;
-        _ref = this.state.requester;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          src = _ref[_i];
-          _results.push(R.img({
-            key: src,
-            src: 'http://robohash.org/' + src + '.png?size=32x32'
-          }));
-        }
-        return _results;
-      }).call(this));
-    } else {
-      return R.div(null);
     }
   }
 });
@@ -1310,12 +1312,16 @@ App = React.createClass({
       id: 'left',
       className: 'col-md-8'
     }, R.div({
-      className: 'row'
+      className: 'row',
+      style: {
+        marginBottom: '1.2em'
+      }
     }, R.div({
       className: 'col-md-6'
     }, Titleblock({
       connected: this.state.connected,
-      count: count
+      count: count,
+      sock: this.state.sock
     })), R.div({
       className: 'col-md-6',
       style: {
@@ -1327,15 +1333,6 @@ App = React.createClass({
       removeFavorite: this.removeFavorite,
       sock: this.state.sock,
       audio: this.state.audio
-    }))), R.div({
-      className: 'row',
-      style: {
-        margin: '0.6em'
-      }
-    }, R.div({
-      className: 'col-md-12'
-    }, Listenerlist({
-      sock: this.state.sock
     }))), R.div({
       className: 'row'
     }, R.div({

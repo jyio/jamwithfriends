@@ -180,14 +180,32 @@ Navbar = React.createClass
 							nick:	@props.nick
 							sock:	@props.sock
 
+Listenerlist = React.createClass
+	getInitialState: ->
+		requester:	[]
+	componentDidMount: ->
+		@props.sock.on 'play', (msg) =>
+			@setState
+				requester:	msg.requester
+	render: ->
+		if @state.requester.length > 0
+			R.div null,
+				for src in @state.requester
+					R.img
+						key:	src
+						src:	'http://robohash.org/' + src + '.png?size=32x32'
+		else
+			R.h3 {style: {margin: '0'}},
+				R.a {href: "/c/#{channel}"}, "#{window.location.host}/c/#{channel}"
+
 Titleblock = React.createClass
 	render: ->
 		R.div null,
 			R.h1 {style: {margin: '0'}},
 				R.a {href: "/c/#{channel}"}, "#{channel}"
 				if @props.connected then " | #{@props.count}" else ''
-			R.h3 {style: {margin: '0'}},
-				R.a {href: "/c/#{channel}"}, "#{window.location.host}/c/#{channel}"
+			Listenerlist
+				sock:	@props.sock
 
 Player = React.createClass
 	getInitialState: ->
@@ -290,23 +308,6 @@ Player = React.createClass
 			@props.sock.emit 'stop',
 				vidkey:	vidkey
 				reason:	'skip'
-
-Listenerlist = React.createClass
-	getInitialState: ->
-		requester:	[]
-	componentDidMount: ->
-		@props.sock.on 'play', (msg) =>
-			@setState
-				requester:	msg.requester
-	render: ->
-		if @state.requester.length > 0
-			R.div null,
-				for src in @state.requester
-					R.img
-						key:	src
-						src:	'http://robohash.org/' + src + '.png?size=32x32'
-		else
-			R.div null
 
 PlaylistItem = React.createClass
 	getInitialState: ->
@@ -705,11 +706,12 @@ App = React.createClass
 				R.div {className: 'container'},
 					R.div {className: 'row'},
 						R.div {id: 'left', className: 'col-md-8'},
-							R.div {className: 'row'},
+							R.div {className: 'row', style: {marginBottom: '1.2em'}},
 								R.div {className: 'col-md-6'},
 									Titleblock
 										connected:	@state.connected
 										count:		count
+										sock:		@state.sock
 								R.div {className: 'col-md-6', style: {marginTop: '1em'}},
 									Player
 										request:		request
@@ -717,10 +719,6 @@ App = React.createClass
 										removeFavorite:	@removeFavorite
 										sock:			@state.sock
 										audio:			@state.audio
-							R.div {className: 'row', style: {margin: '0.6em'}},
-								R.div {className: 'col-md-12'},
-									Listenerlist
-										sock:	@state.sock
 							R.div {className: 'row'},
 								R.div {className: 'col-md-12'},
 									Playlist
