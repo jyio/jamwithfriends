@@ -318,6 +318,8 @@ Navbar = React.createClass({
   }
 });
 
+var robots = ['3p3A39231X0c0r0O392a/Robot-Devil.png', '1v1O0U303L2d3D3Y472w/Roberto.png', '183m3x2w340p093d1o1X/iZac.png', '1o2T0F072r0k3T2L1i2C/Hedonismbot.png', '181G3A2j0A2p3d0D0t38/URL.png', '0c2w1Y3v3K120s0v043b/Malfunctioning-Eddie.png', '41223j0S212b3Z111H05/Frybot.png', '111b0A160Z2r0x3T2S26/Wooden-Bender.png', '25313x1W3A1h2m1A262Z/Robot-Elder.png', '3n1I1B3d2I3k371p0510/Fatbot.png'];
+
 Listenerlist = React.createClass({
   getInitialState: function() {
     return {
@@ -343,8 +345,10 @@ Listenerlist = React.createClass({
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           src = _ref[_i];
           _results.push(R.img({
-            key: src,
-            src: 'http://robohash.org/' + src + '.png?size=32x32'
+            for (var j = 0; j < robots.length; j++) {
+              key: src,
+              src: 'http://f.cl.ly/items/' + robots[Math.floor(Math.random() * robots.length)]);
+            }
           }));
         }
         return _results;
